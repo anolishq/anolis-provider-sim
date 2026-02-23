@@ -87,10 +87,31 @@
       }
     },
     {
+      "name": "ci-linux-release-strict",
+      "inherits": "ci-linux-release",
+      "cacheVariables": {
+        "ANOLIS_PROVIDER_SIM_WARNINGS_AS_ERRORS": "ON"
+      }
+    },
+    {
+      "name": "ci-windows-release-strict",
+      "inherits": "ci-windows-release",
+      "cacheVariables": {
+        "ANOLIS_PROVIDER_SIM_WARNINGS_AS_ERRORS": "ON"
+      }
+    },
+    {
       "name": "ci-linux-release-fluxgraph",
       "inherits": "ci-linux-release",
       "cacheVariables": {
         "ENABLE_FLUXGRAPH": "ON"
+      }
+    },
+    {
+      "name": "ci-linux-release-fluxgraph-strict",
+      "inherits": "ci-linux-release-fluxgraph",
+      "cacheVariables": {
+        "ANOLIS_PROVIDER_SIM_WARNINGS_AS_ERRORS": "ON"
       }
     }
   ],
@@ -132,8 +153,21 @@
       "configuration": "Release"
     },
     {
+      "name": "ci-linux-release-strict",
+      "configurePreset": "ci-linux-release-strict"
+    },
+    {
+      "name": "ci-windows-release-strict",
+      "configurePreset": "ci-windows-release-strict",
+      "configuration": "Release"
+    },
+    {
       "name": "ci-linux-release-fluxgraph",
       "configurePreset": "ci-linux-release-fluxgraph"
+    },
+    {
+      "name": "ci-linux-release-fluxgraph-strict",
+      "configurePreset": "ci-linux-release-fluxgraph-strict"
     }
   ],
   "testPresets": [
@@ -198,8 +232,30 @@
       }
     },
     {
+      "name": "ci-linux-release-strict",
+      "configurePreset": "ci-linux-release-strict",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "ci-windows-release-strict",
+      "configurePreset": "ci-windows-release-strict",
+      "configuration": "Release",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
       "name": "ci-linux-release-fluxgraph",
       "configurePreset": "ci-linux-release-fluxgraph",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "ci-linux-release-fluxgraph-strict",
+      "configurePreset": "ci-linux-release-fluxgraph-strict",
       "output": {
         "outputOnFailure": true
       }

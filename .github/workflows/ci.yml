@@ -15,8 +15,15 @@ env:
 
 jobs:
   linux-release:
-    name: Linux Release (FluxGraph OFF)
+    name: ${{ matrix.lane }}
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - lane: Linux Release (FluxGraph OFF, strict)
+            configure_preset: ci-linux-release-strict
+            test_preset: ci-linux-release-strict
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -61,15 +68,22 @@ jobs:
 
       - name: Build
         run: |
-          cmake --preset ci-linux-release
-          cmake --build --preset ci-linux-release --parallel
+          cmake --preset "${{ matrix.configure_preset }}"
+          cmake --build --preset "${{ matrix.configure_preset }}" --parallel
 
       - name: Test (CTest provider baseline)
-        run: ctest --preset ci-linux-release -L provider
+        run: ctest --preset "${{ matrix.test_preset }}" -L provider
 
   windows-release:
-    name: Windows Release (FluxGraph OFF)
+    name: ${{ matrix.lane }}
     runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - lane: Windows Release (FluxGraph OFF, strict)
+            configure_preset: ci-windows-release-strict
+            test_preset: ci-windows-release-strict
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -111,16 +125,23 @@ jobs:
       - name: Build
         shell: pwsh
         run: |
-          cmake --preset ci-windows-release
-          cmake --build --preset ci-windows-release --parallel
+          cmake --preset "${{ matrix.configure_preset }}"
+          cmake --build --preset "${{ matrix.configure_preset }}" --parallel
 
       - name: Test (CTest provider baseline)
         shell: pwsh
-        run: ctest --preset ci-windows-release -L provider
+        run: ctest --preset "${{ matrix.test_preset }}" -L provider
 
   linux-fluxgraph:
-    name: Linux Release (FluxGraph ON)
+    name: ${{ matrix.lane }}
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - lane: Linux Release (FluxGraph ON, strict)
+            configure_preset: ci-linux-release-fluxgraph-strict
+            test_preset: ci-linux-release-fluxgraph-strict
     steps:
       - name: Checkout provider-sim
         uses: actions/checkout@v4
@@ -192,8 +213,8 @@ jobs:
 
       - name: Build provider-sim (FluxGraph ON)
         run: |
-          cmake --preset ci-linux-release-fluxgraph -DFLUXGRAPH_DIR="$GITHUB_WORKSPACE/fluxgraph"
-          cmake --build --preset ci-linux-release-fluxgraph --parallel
+          cmake --preset "${{ matrix.configure_preset }}" -DFLUXGRAPH_DIR="$GITHUB_WORKSPACE/fluxgraph"
+          cmake --build --preset "${{ matrix.configure_preset }}" --parallel
 
       - name: Test FluxGraph suites
         run: |
@@ -202,4 +223,4 @@ jobs:
             echo "ERROR: fluxgraph-server binary not found under $GITHUB_WORKSPACE/fluxgraph/build-server" >&2
             exit 1
           fi
-          FLUXGRAPH_SERVER_EXE="$SERVER_BIN" ctest --preset ci-linux-release-fluxgraph -L fluxgraph
+          FLUXGRAPH_SERVER_EXE="$SERVER_BIN" ctest --preset "${{ matrix.test_preset }}" -L fluxgraph
