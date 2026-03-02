@@ -1,47 +1,64 @@
 # Provider-Sim Examples
 
-This directory contains working examples demonstrating each simulation mode and integration pattern.
+This directory contains configuration-first examples for each simulation mode.
 
-## Examples
+## Example Directories
 
-### Provider-Sim Standalone Examples
-
-- **[inert_mode](inert_mode/)** - Protocol testing without physics simulation  
-- **[non_interacting_mode](non_interacting_mode/)** - Built-in first-order physics  
-- **[sim_mode](sim_mode/)** - FluxGraph external simulation integration
-
-### Full Stack Integration Examples
-
-_(Coming soon - see validation plan)_
+- `inert_mode/`: `mode=inert` (no ticker, no automatic simulation updates)
+- `non_interacting_mode/`: `mode=non_interacting` (built-in local first-order dynamics)
+- `sim_mode/`: `mode=sim` (external FluxGraph integration)
 
 ## Quick Start
 
-Each example directory contains:
-- **README.md** - Overview and usage instructions
-- **Configuration files** - YAML configs for provider and/or physics
-- **Test script** - Python or shell script to run the example
-- **Expected output** - What success looks like
+Build provider-sim first:
 
-## Running Examples
+Linux/macOS:
 
-```powershell
-# Navigate to example directory
-cd examples/inert_mode
-
-# Follow the README instructions
-python test_inert.py
+```bash
+bash ./scripts/build.sh --preset dev-release
 ```
 
-## Prerequisites
+Windows:
 
-- **anolis-provider-sim** built: `.\scripts\build.ps1 -Release`
-- **Python 3.8+** with protobuf package: `pip install protobuf`
-- **FluxGraph** (for sim mode examples): Built with server support
+```powershell
+.\scripts\build.ps1 -Preset dev-windows-release
+```
 
-## Troubleshooting
+Run each mode with its example config:
 
-If examples fail:
-1. Verify builds are up to date: `.\scripts\build.ps1 -Release`
-2. Check that protocol_pb2.py exists in `build/` directory
-3. Ensure Python can find protobuf module: `pip list | grep protobuf`
-4. For sim mode, verify FluxGraph server is accessible
+Linux/macOS:
+
+```bash
+bash ./scripts/run_local.sh --preset dev-release -- --config examples/inert_mode/provider.yaml
+bash ./scripts/run_local.sh --preset dev-release -- --config examples/non_interacting_mode/provider.yaml
+```
+
+Windows:
+
+```powershell
+.\scripts\run_local.ps1 -Preset dev-windows-release -- --config examples/inert_mode/provider.yaml
+.\scripts\run_local.ps1 -Preset dev-windows-release -- --config examples/non_interacting_mode/provider.yaml
+```
+
+For `sim_mode`, build FluxGraph-enabled provider and pass `--sim-server`.
+
+## FluxGraph (`sim_mode`)
+
+Linux/macOS:
+
+```bash
+bash ./scripts/build.sh --preset ci-linux-release-fluxgraph -- -DFLUXGRAPH_DIR=../fluxgraph
+bash ./scripts/run_local.sh --preset ci-linux-release-fluxgraph -- --config examples/sim_mode/provider.yaml --sim-server localhost:50051
+```
+
+Windows:
+
+```powershell
+.\scripts\build.ps1 -Preset dev-windows-release-fluxgraph -- -DFLUXGRAPH_DIR=..\fluxgraph
+.\scripts\run_local.ps1 -Preset dev-windows-release-fluxgraph -- --config examples/sim_mode/provider.yaml --sim-server localhost:50051
+```
+
+## Notes
+
+- Example Python scripts in each folder are scenario demos.
+- CI-grade integration validation lives under `tests/`.

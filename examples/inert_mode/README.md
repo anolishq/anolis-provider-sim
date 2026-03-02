@@ -1,149 +1,32 @@
 # Inert Mode Example
 
-## What is Inert Mode?
+`inert` mode is the no-simulation path:
 
-Inert mode is the simplest simulation mode with **no physics computation**:
+- No ticker thread
+- No automatic physics updates
+- Device state only changes through explicit calls
 
-- ❌ NO physics simulation
-- ❌ NO ticker thread
-- ✅ Sensors return fixed default values
-- ✅ Function calls accepted but ignored
-- ✅ Fast, deterministic, zero dependencies
+## Config
 
-## When to Use Inert Mode
+- Provider config: `examples/inert_mode/provider.yaml`
 
-- **ADPP Protocol Testing** - Verify message framing, serialization
-- **Provider Startup/Shutdown Testing** - Lifecycle validation
-- **Function Signature Validation** - Check function IDs and parameters
-- **Quick Sanity Checks** - Fast provider smoke tests
-- **CI/CD Pipelines** - Lightweight integration tests
+## Run
 
-## Architecture
+Linux/macOS:
 
-```
-┌─────────────────────────────┐
-│   Anolis Runtime / Test     │
-│          Script             │
-└──────────────┬──────────────┘
-               │ ADPP (stdin/stdout)
-               │
-┌──────────────▼──────────────┐
-│   Provider-Sim (Inert)      │
-│                             │
-│  ┌────────────────────────┐ │
-│  │   NullEngine           │ │
-│  │   - tick() → false     │ │
-│  │   - No state changes   │ │
-│  └────────────────────────┘ │
-│                             │
-│  Devices return defaults:   │
-│  - tempctl: 23.0°C         │
-│  - motorctl: 0 RPM         │
-│  - relay: OFF              │
-└─────────────────────────────┘
+```bash
+bash ./scripts/build.sh --preset dev-release
+bash ./scripts/run_local.sh --preset dev-release -- --config examples/inert_mode/provider.yaml
 ```
 
-## Files
-
-- **provider.yaml** - Inert mode configuration
-- **test_inert.py** - Python test demonstrating inert behavior
-- **README.md** - This file
-
-## Configuration
-
-```yaml
-devices:
-  - id: tempctl0
-    type: tempctl
-    initial_temp: 25.0
-  
-  - id: motorctl0
-    type: motorctl
-    max_speed: 3000
-
-simulation:
-  mode: inert  # No physics
-```
-
-## Running the Example
+Windows:
 
 ```powershell
-# From anolis-provider-sim root
-cd examples\01_inert_mode
-
-# Run test
-python test_inert.py
+.\scripts\build.ps1 -Preset dev-windows-release
+.\scripts\run_local.ps1 -Preset dev-windows-release -- --config examples/inert_mode/provider.yaml
 ```
 
-## Expected Output
+## Related
 
-```
-============================================================
-Inert Mode Example
-============================================================
-
-Use Case: ADPP protocol testing without physics simulation
-Benefits: Fast, deterministic, no dependencies
-
-[1] Listing devices...
-✓ Found devices: ['tempctl0', 'motorctl0', 'relayio0', 'analogsensor0', 'chaos_control']
-[2] Reading signals...
-  tc1_temp = 23.0
-  tc2_temp = 23.0
-[3] Calling set_mode function...
-✓ Function call accepted
-[4] Verifying no state change...
-✓ No state change (as expected)
-
-✓ Inert mode working correctly!
-```
-
-## Key Behaviors
-
-### Device Discovery
-- All configured devices appear in ListDevices
-- Health status available
-- Metadata correct
-
-### Signal Reading
-- **Sensors** return hardcoded defaults (defined in device implementation)
-- **Actuators** return last-set value (or default if never set)
-- Values never change over time (no ticker)
-
-### Function Calls
-- All functions return SUCCESS
-- **NO state changes occur** - functions are no-ops
-- Useful for testing function signature validity
-
-### Performance
-- Extremely fast (no computation)
-- Deterministic (no time-based behavior)
-- Suitable for high-frequency testing
-
-## Comparison with Other Modes
-
-| Feature | Inert | Non-Interacting | Sim |
-|---------|-------|-----------------|-----|
-| Physics | ❌ None | ✅ Built-in | ✅ External |
-| Ticker | ❌ No | ✅ Yes | ✅ Yes |
-| State Changes | ❌ No | ✅ Yes | ✅ Yes |
-| Dependencies | None | None | FluxGraph |
-| Speed | Fastest | Fast | Moderate |
-| Use Case | Protocol Tests | Simple Physics | Complex Physics |
-
-## Next Steps
-
-- **Add physics**: See [02_non_interacting_mode](../02_non_interacting_mode/)
-- **External simulation**: See [03_sim_mode](../03_sim_mode/)
-- **Full integration**: See [05_full_stack_inert](../05_full_stack_inert/)
-
-## Troubleshooting
-
-**Problem:** `Protocol buffer not found`
-**Solution:** Ensure protocol_pb2.py is generated: `.\scripts\build.ps1`
-
-**Problem:** `Provider not found`
-**Solution:** Build first: `.\scripts\build.ps1 -Release`
-
-**Problem:** `Python import error`
-**Solution:** Install protobuf: `pip install protobuf`
+- [Non-interacting mode](../non_interacting_mode/)
+- [Sim mode](../sim_mode/)

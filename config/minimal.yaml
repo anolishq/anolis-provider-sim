@@ -8,5 +8,3 @@ devices:
 
 simulation:
   mode: inert
-  tick_rate_hz: 5.0
-  noise_enabled: false

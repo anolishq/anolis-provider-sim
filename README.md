@@ -41,19 +41,16 @@ Provider-sim includes a configurable physics engine for realistic multi-device s
 
 ### Demo Scenarios
 
-**Thermal Chamber** (`demo-chamber.yaml`):
+**Chamber FluxGraph Integration** (`config/provider-chamber.yaml` + `config/multi-provider-extrusion.yaml`):
 
-- Single temperature controller with dual heating elements
-- Realistic thermal model with lag and noise
-- Overheat protection rule (auto-shutdown at 140°C)
+- Single-provider chamber simulation against FluxGraph
+- Demonstrates external simulation wiring, ambient injection, and wait-ready flow
 - See [docs/demo-chamber.md](docs/demos/demo-chamber.md)
 
-**Multi-Zone Reactor** (`demo-reactor.yaml`):
+**Multi-Provider Extrusion Coupling** (`config/provider-chamber.yaml` + `config/provider-extruder.yaml`):
 
-- 2x tempctl + 1x motorctl with thermal coupling
-- Core and jacket thermal zones with bidirectional heat transfer
-- 3 coordinated safety rules
-- Demonstrates multi-instance signal routing
+- Two provider instances coupled through one shared FluxGraph graph
+- Demonstrates cross-provider thermal interaction and synchronization behavior
 - See [docs/demo-reactor.md](docs/demos/demo-reactor.md)
 
 ### Architecture Overview
@@ -93,7 +90,7 @@ Provider-sim includes several example configurations:
 
 ### Configuration Schema
 
-See [docs/CONFIGURATION.md](docs/configuration.md) for complete schema documentation and hardware provider guidance.
+See [docs/configuration.md](docs/configuration.md) for complete schema documentation and hardware provider guidance.
 
 ### Quick Example
 
@@ -108,8 +105,8 @@ devices:
     initial_temp: 30.0
 
 simulation:
-  noise_enabled: true
-  update_rate_hz: 10
+  mode: non_interacting
+  tick_rate_hz: 10.0
 ```
 
 ## Fault Injection API
@@ -274,7 +271,7 @@ bash ./scripts/build.sh --preset ci-linux-release-fluxgraph -- -DFLUXGRAPH_DIR=.
 
 ### Linux
 
-See [docs/SETUP-LINUX.md](docs/setup-linux.md)
+See [docs/setup-linux.md](docs/setup-linux.md)
 
 ## Running
 

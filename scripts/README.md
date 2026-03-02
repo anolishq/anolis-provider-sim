@@ -1,403 +1,158 @@
-# anolis-provider-sim Scripts and Testing
+# Scripts Reference
 
-## Overview
+This directory provides cross-platform wrappers for build, run, and test flows.
 
-This directory contains build, test, and utility scripts for anolis-provider-sim.
-All scripts have Windows (`.ps1`) and Linux/macOS (`.sh`) variants for cross-platform consistency.
-
-Discover available presets:
+## Preset Discovery
 
 ```bash
 cmake --list-presets
 ctest --list-presets
 ```
 
----
+## Build
 
-## Build Scripts
+Linux/macOS:
 
-### Windows
-
-```powershell
-.\scripts\build.ps1 [options]
-
-Options:
-  -Preset <name>          Configure/build preset (default: dev-release on Linux/macOS, dev-windows-release on Windows)
-  -Clean                  Remove preset build directory before configuring
-  -Jobs <N>               Parallel build jobs
-  -- <args>               Extra arguments passed to `cmake --preset`
+```bash
+bash ./scripts/build.sh --preset dev-release
 ```
 
-**Examples:**
+Windows:
 
 ```powershell
-# Release build (default)
 .\scripts\build.ps1 -Preset dev-windows-release
-
-# Clean debug build
-.\scripts\build.ps1 -Preset dev-windows-debug -Clean
-
-# FluxGraph-enabled build
-.\scripts\build.ps1 -Preset dev-windows-release-fluxgraph -- -DFLUXGRAPH_DIR=D:\repos_feast\fluxgraph
 ```
 
-### Linux/macOS
+Common options:
+
+- `--clean` / `-Clean`
+- `--jobs <N>` / `-Jobs <N>`
+- `-- <extra cmake configure args>`
+
+FluxGraph-enabled examples:
 
 ```bash
-bash ./scripts/build.sh [options]
-
-Options:
-  --preset <name>         Configure/build preset (default: dev-release)
-  --clean                 Remove preset build directory before configuring
-  -j, --jobs <N>          Parallel build jobs
-  -- <args>               Extra arguments passed to `cmake --preset`
-```
-
-**Examples:**
-
-```bash
-# Release build
-bash ./scripts/build.sh
-
-# Clean debug build
-bash ./scripts/build.sh --preset dev-debug --clean
-
-# FluxGraph-enabled build
 bash ./scripts/build.sh --preset ci-linux-release-fluxgraph -- -DFLUXGRAPH_DIR=../fluxgraph
 ```
 
----
-
-## Test Scripts
-
-### Windows
-
 ```powershell
-.\scripts\test.ps1 [options]
-
-Options:
-  -Preset <name>         Test preset (default: dev-release on Linux/macOS, dev-windows-release on Windows)
-  -Suite <name>          Test suite: all|smoke|adpp|multi|fault|fluxgraph (default: all)
-  -VerboseOutput         Pass -VV to ctest
+.\scripts\build.ps1 -Preset dev-windows-release-fluxgraph -- -DFLUXGRAPH_DIR=..\fluxgraph
 ```
 
-**Examples:**
+## Run Locally
 
-```powershell
-# Run all tests
-.\scripts\test.ps1 -Preset dev-windows-release
-
-# Run smoke test only
-.\scripts\test.ps1 -Preset dev-windows-release -Suite smoke
-
-# Run ADPP integration tests
-.\scripts\test.ps1 -Preset dev-windows-release -Suite adpp
-
-# Run multi-instance tests
-.\scripts\test.ps1 -Suite multi
-
-# Run fault injection tests
-.\scripts\test.ps1 -Suite fault
-
-# Run FluxGraph integration suite
-.\scripts\test.ps1 -Preset dev-windows-release-fluxgraph -Suite fluxgraph
-```
-
-### Linux/macOS
+Linux/macOS:
 
 ```bash
-bash ./scripts/test.sh [options]
-
-Options:
-  --preset <name>        Test preset (default: dev-release)
-  --suite <name>         Test suite: all|smoke|adpp|multi|fault|fluxgraph
-  -v, --verbose          Pass -VV to ctest
+bash ./scripts/run_local.sh --preset dev-release -- --config config/provider-sim.yaml
 ```
 
-**Examples:**
+Windows:
+
+```powershell
+.\scripts\run_local.ps1 -Preset dev-windows-release -- --config config/provider-sim.yaml
+```
+
+`--config` is required.
+
+`sim` mode example:
 
 ```bash
-# Run all tests
-bash ./scripts/test.sh
+bash ./scripts/run_local.sh --preset ci-linux-release-fluxgraph -- --config config/provider-chamber.yaml --sim-server localhost:50051
+```
 
-# Run smoke test only
-bash ./scripts/test.sh --preset ci-linux-release --suite smoke
+```powershell
+.\scripts\run_local.ps1 -Preset dev-windows-release-fluxgraph -- --config config/provider-chamber.yaml --sim-server localhost:50051
+```
 
-# Run FluxGraph integration suite
+## Test
+
+Linux/macOS:
+
+```bash
+bash ./scripts/test.sh --preset dev-release --suite all
+```
+
+Windows:
+
+```powershell
+.\scripts\test.ps1 -Preset dev-windows-release -Suite all
+```
+
+Suites:
+
+- `all` (maps to CTest label `provider`)
+- `smoke`
+- `adpp`
+- `multi`
+- `fault`
+- `fluxgraph`
+
+Verbose output:
+
+- Linux/macOS: `-v` or `--verbose`
+- Windows: `-VerboseOutput`
+
+FluxGraph tests:
+
+```bash
 bash ./scripts/test.sh --preset ci-linux-release-fluxgraph --suite fluxgraph
 ```
 
-`all` maps to CTest label `provider`; suite selections map to their label (`smoke`, `adpp`, `multi`, `fault`, `fluxgraph`).
-On Windows, use `dev-windows-*` presets for local work; `dev-*` presets are Ninja-based and intended for Linux/macOS.
-Integration tests are CTest-registered from CMake (`ctest --preset <preset> -L provider`).
-
----
-
-## Run Local Scripts
-
-Start the provider locally for manual testing or integration with Anolis Runtime.
-
-### Windows
-
 ```powershell
-.\scripts\run_local.ps1 [options] [-- <provider-args>]
-
-Options:
-  -Preset <name>         Build preset (default: dev-release on Linux/macOS, dev-windows-release on Windows)
-  -BuildDir <path>       Build directory override (default: build\<preset>)
-  -- <args>              Arguments to pass to provider executable
+.\scripts\test.ps1 -Preset dev-windows-release-fluxgraph -Suite fluxgraph
 ```
 
-**Examples:**
+## Python Protobuf Generation (Direct Script Usage)
 
-```powershell
-# Run with minimal config (no physics)
-.\scripts\run_local.ps1 -Preset dev-windows-release -- --config config/minimal.yaml
+If you invoke Python tests directly (outside CTest), generate `protocol_pb2.py` in the target build directory.
 
-# Run with sim mode
-.\scripts\run_local.ps1 -Preset dev-windows-release -- --config config/test-physics.yaml
-
-# Run with FluxGraph integration
-.\scripts\run_local.ps1 -- --config config/test-flux-integration.yaml --sim-server localhost:50051
-```
-
-### Linux/macOS
+Linux/macOS:
 
 ```bash
-bash ./scripts/run_local.sh [options] [-- <provider-args>]
-
-Options:
-  --preset <name>        Build preset (default: dev-release)
-  --build-dir <path>     Build directory override (default: build/<preset>)
-  -- <args>              Arguments to pass to provider executable
+bash ./scripts/generate_proto_python.sh ./build/dev-release
 ```
 
----
-
-## Utility Scripts
-
-### Generate Python Protobuf Bindings
-
-Required only for direct Python test invocation (`python tests/...`).
-If running via CTest (`scripts/test.*`), generation is handled by the CTest fixture.
-
-**Windows:**
+Windows:
 
 ```powershell
 .\scripts\generate_proto_python.ps1 -OutputDir .\build\dev-windows-release
 ```
 
-**Linux/macOS:**
+## Practical Workflows
+
+Quick local validation:
 
 ```bash
-bash ./scripts/generate_proto_python.sh ./build/ci-linux-release
+bash ./scripts/build.sh --preset dev-release
+bash ./scripts/test.sh --preset dev-release --suite smoke
 ```
-
-Generates `protocol_pb2.py` in the target build directory from ADPP protocol specification.
-
----
-
-## Test Suite Details
-
-### Smoke Test (`tests/test_hello.py`)
-
-- Validates basic Hello handshake over stdio+uint32_le framing
-- Confirms provider starts and responds correctly
-- **Runtime: <1 second**
-
-### ADPP Integration Tests (`tests/test_adpp_integration.py`)
-
-- Full ADPP protocol validation
-- Device enumeration, capabilities, state reading, command execution
-- Tests all device types (tempctl, motorctl, relayio, analogsensor)
-- **Runtime: ~5 seconds**
-
-### Multi-Instance Test (`tests/test_multi_instance.py`)
-
-- Multiple same-type devices in one provider process
-- Validates per-device state independence (`tempctl0` vs `tempctl1`)
-- **Runtime: ~5 seconds**
-
-### Fault Injection Tests (`tests/test_fault_injection.py`)
-
-- Tests error handling and fault injection API
-- Validates device failure modes and recovery
-- **Runtime: ~5 seconds**
-
-### FluxGraph Integration Test (`tests/test_fluxgraph_integration.py`)
-
-- FluxGraph gRPC integration
-- Requires FluxGraph server to be built
-- Validates hello/wait_ready flow and measurable simulation-state progression
-- **Runtime: ~15-60 seconds**
-
-Shared Python test harness modules live under `tests/support/`.
-See `tests/README.md` for test authoring and troubleshooting guidance.
-
----
-
-## FluxGraph Integration Testing
-
-### Prerequisites
-
-1. **Build FluxGraph server:**
-
-   ```powershell
-   cd ..\fluxgraph
-   .\scripts\build.ps1 -Preset ci-linux-release-server
-   ```
-
-2. **Build anolis-provider-sim:**
-
-   ```powershell
-   cd ..\anolis-provider-sim
-   .\scripts\build.ps1
-   ```
-
-3. **Generate Python bindings:**
-   ```powershell
-   .\scripts\generate_proto_python.ps1
-   ```
-
-### Run Integration Test
 
 ```powershell
-python tests/test_fluxgraph_integration.py -d 10  # 10 second test
-python tests/test_fluxgraph_integration.py -d 30  # 30 second test
+.\scripts\build.ps1 -Preset dev-windows-release
+.\scripts\test.ps1 -Preset dev-windows-release -Suite smoke
 ```
 
-### Run Multi-Provider Scenario
+Full local provider suite:
+
+```bash
+bash ./scripts/test.sh --preset dev-release --suite all
+```
 
 ```powershell
-python tests/test_multi_provider_scenario.py
-# or
-pwsh .\scripts\test.ps1 -Preset dev-windows-release-fluxgraph -Suite fluxgraph
+.\scripts\test.ps1 -Preset dev-windows-release -Suite all
 ```
-
-The scenario:
-
-- Starts one FluxGraph server.
-- Starts two provider instances (`config/provider-chamber.yaml` and `config/provider-extruder.yaml`).
-- Verifies cross-provider coupling (`tempctl1/tc2_temp` increase after chamber warmup).
-
-### Manual Testing
-
-1. **Start FluxGraph server:**
-
-   ```powershell
-   cd ..\fluxgraph
-   .\scripts\run_server.ps1 -Port 50051
-   ```
-
-2. **In another terminal, start provider:**
-
-   ```powershell
-   cd ..\anolis-provider-sim
-   .\scripts\run_local.ps1 -- --config config/test-flux-integration.yaml --sim-server localhost:50051
-   ```
-
-3. **Provider will connect and register with FluxGraph server**
-
----
-
-## Common Workflows
-
-### Quick Validation After Code Changes
-
-```powershell
-# Rebuild and run smoke test
-.\scripts\build.ps1
-.\scripts\test.ps1 -Suite smoke
-```
-
-### Full Validation Before Commit
-
-```powershell
-# Clean build and run all tests
-.\scripts\build.ps1 -Clean
-.\scripts\test.ps1 -Suite all
-```
-
-### FluxGraph Development
-
-```powershell
-# Terminal 1: Build and start FluxGraph server
-cd ..\fluxgraph
-.\scripts\build.ps1 -Preset ci-linux-release-server -CleanFirst
-.\scripts\run_server.ps1
-
-# Terminal 2: Build provider-sim and run FluxGraph CTest suite
-cd ..\anolis-provider-sim
-.\scripts\build.ps1 -Preset dev-windows-release-fluxgraph -Clean
-$env:FLUXGRAPH_SERVER_EXE = "..\\fluxgraph\\build-server\\server\\Release\\fluxgraph-server.exe"
-.\scripts\test.ps1 -Preset dev-windows-release-fluxgraph -Suite fluxgraph
-```
-
-### Debug Build Investigation
-
-```powershell
-# Build debug version
-.\scripts\build.ps1 -Preset dev-debug
-
-# Run with debugger
-.\build\dev-debug\anolis-provider-sim.exe --config config/minimal.yaml
-```
-
----
 
 ## Troubleshooting
 
-### Tests Fail to Find Executable
+`FATAL: --config argument is required`:
 
-**Problem:** `ERROR: Could not find anolis-provider-sim executable`
+- Pass config path after `--` in `run_local.*`.
 
-**Solution:**
+`mode=sim requires FluxGraph support`:
 
-```powershell
-# Ensure build completed successfully
-.\scripts\build.ps1
+- Rebuild with a FluxGraph-enabled preset.
 
-# Or set environment variable
-$env:ANOLIS_PROVIDER_SIM_EXE = "D:\path\to\anolis-provider-sim.exe"
-.\scripts\test.ps1
-```
+Windows preset/toolchain mismatch:
 
-### Python Import Errors
-
-**Problem:** `ERROR: protocol_pb2 module not found in build`
-
-**Solution:**
-
-```powershell
-# Generate Python protobuf bindings
-.\scripts\generate_proto_python.ps1
-```
-
-### FluxGraph Server Not Found
-
-**Problem:** `ERROR: FluxGraph server not found`
-
-**Solution:**
-
-```powershell
-# Build FluxGraph server
-cd ..\fluxgraph
-.\scripts\build.ps1 -Preset ci-linux-release-server
-
-# Or set environment variable
-$env:FLUXGRAPH_SERVER_EXE = "D:\path\to\fluxgraph-server.exe"
-python tests/test_fluxgraph_integration.py
-```
-
----
-
-## Script Naming Conventions
-
-All scripts follow consistent naming:
-
-- `build.ps1` / `build.sh` - Build the project
-- `test.ps1` / `test.sh` - Run test suites
-- `run_local.ps1` / `run_local.sh` - Start provider locally
-- `generate_proto_python.ps1` / `.sh` - Generate Python bindings
-
-Tests are in `tests/` directory, not in `scripts/`.
+- Use `dev-windows-*` presets on Windows.
