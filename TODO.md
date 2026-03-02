@@ -1,5 +1,9 @@
 # anolis-provider-sim - TODO
 
+## CI / Quality
+
+- [ ] Setup precommit hooks for relevant tooling
+
 ## Concurrency / Correctness
 
 - [ ] Run Linux TSAN suite (`ENABLE_TSAN=ON`) focused on ADPP + ticker + state access.
