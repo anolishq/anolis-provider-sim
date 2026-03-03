@@ -59,10 +59,7 @@ def run_sim_example(duration_sec: int, port: int) -> int:
     client: AdppClient | None = None
     try:
         if not server.wait_for_port("127.0.0.1", port, timeout=8.0):
-            raise RuntimeError(
-                "FluxGraph server did not become ready in time\n"
-                + server.output_tail(120)
-            )
+            raise RuntimeError("FluxGraph server did not become ready in time\n" + server.output_tail(120))
 
         client = AdppClient(
             protocol,
