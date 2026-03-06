@@ -2,7 +2,8 @@
 
 ## Overview
 
-The Signal Registry pattern provides clean separation between physics simulation and device protocol implementation. Physics engine operates on abstract signal paths, devices expose protocol-specific interfaces.
+The Signal Registry pattern provides clean separation between physics simulation and device protocol implementation.
+Physics engine operates on abstract signal paths, devices expose protocol-specific interfaces.
 
 ## Key Components
 
