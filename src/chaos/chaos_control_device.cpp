@@ -1,3 +1,12 @@
+/**
+ * @file chaos_control_device.cpp
+ * @brief Capability and command handling for the built-in chaos control device.
+ *
+ * The chaos control device is always addressable but intentionally has no
+ * signals. Its only purpose is to expose deterministic runtime fault injection
+ * controls through the normal ADPP call surface.
+ */
+
 #include "chaos/chaos_control_device.hpp"
 #include "chaos/fault_injection.hpp"
 
@@ -12,10 +21,6 @@ using anolis::deviceprovider::v1::FunctionPolicy;
 using anolis::deviceprovider::v1::FunctionSpec;
 using anolis::deviceprovider::v1::ValueType;
 
-// -----------------------------
-// Constants
-// -----------------------------
-
 static constexpr const char *kProviderName = "anolis-provider-sim";
 
 // Function IDs
@@ -25,15 +30,7 @@ static constexpr uint32_t kFnInjectCallLatency = 3;
 static constexpr uint32_t kFnInjectCallFailure = 4;
 static constexpr uint32_t kFnClearFaults = 5;
 
-// -----------------------------
-// Initialization
-// -----------------------------
-
 void init() { fault_injection::init(); }
-
-// -----------------------------
-// Device info
-// -----------------------------
 
 Device get_device_info(bool /*include_health*/) {
   Device d;
@@ -54,16 +51,11 @@ static bool is_numeric_function_id(const std::string &function_id) {
                      [](unsigned char ch) { return std::isdigit(ch) != 0; });
 }
 
-// -----------------------------
-// Capabilities
-// -----------------------------
-
 CapabilitySet get_capabilities() {
   CapabilitySet caps;
 
-  // No signals for control device
-
-  // Functions
+  // The device is intentionally control-only, so it advertises functions but
+  // no readable signal surface.
   {
     FunctionSpec f;
     f.set_function_id(kFnInjectDeviceUnavailable);
@@ -137,26 +129,15 @@ CapabilitySet get_capabilities() {
   return caps;
 }
 
-// -----------------------------
-// Read signals (none)
-// -----------------------------
-
 std::vector<SignalValue>
 read_signals(const std::vector<std::string> & /*signal_ids*/) {
   // No signals for control device
   return {};
 }
 
-// -----------------------------
-// Call function
-// -----------------------------
-
 CallResult call_function(uint32_t function_id,
                          const std::map<std::string, Value> &args) {
-  // Fault injection controls
-
   if (function_id == kFnInjectDeviceUnavailable) {
-    // Extract args
     std::string device_id;
     int64_t duration_ms;
 
@@ -175,7 +156,6 @@ CallResult call_function(uint32_t function_id,
   }
 
   if (function_id == kFnInjectSignalFault) {
-    // Extract args
     std::string device_id;
     std::string signal_id;
     int64_t duration_ms;
@@ -198,7 +178,6 @@ CallResult call_function(uint32_t function_id,
   }
 
   if (function_id == kFnInjectCallLatency) {
-    // Extract args
     std::string device_id;
     int64_t latency_ms;
 
@@ -217,7 +196,6 @@ CallResult call_function(uint32_t function_id,
   }
 
   if (function_id == kFnInjectCallFailure) {
-    // Extract args
     std::string device_id;
     std::string function_id_str;
     double failure_rate;

@@ -1,3 +1,11 @@
+/**
+ * @file fault_injection.cpp
+ * @brief Process-wide fault injection storage and expiry behavior for provider-sim.
+ *
+ * Fault state is shared across the process and mutated only through the chaos
+ * control device. Expiring faults are cleaned up lazily on read paths.
+ */
+
 #include "chaos/fault_injection.hpp"
 
 #include <algorithm>
@@ -6,10 +14,6 @@
 
 namespace sim_devices {
 namespace fault_injection {
-
-// -----------------------------
-// State storage
-// -----------------------------
 
 struct State {
   std::map<std::string, DeviceUnavailableFault> device_unavailable_faults;
@@ -28,17 +32,9 @@ static State &state() {
   return s;
 }
 
-// -----------------------------
-// Initialization
-// -----------------------------
-
 void init() {
   // Already initialized via static
 }
-
-// -----------------------------
-// Clear all faults
-// -----------------------------
 
 void clear_all_faults() {
   State &s = state();
@@ -48,10 +44,6 @@ void clear_all_faults() {
   s.call_latency_faults.clear();
   s.call_failure_faults.clear();
 }
-
-// -----------------------------
-// Device unavailable faults
-// -----------------------------
 
 void inject_device_unavailable(const std::string &device_id,
                                int64_t duration_ms) {
@@ -71,7 +63,8 @@ bool is_device_unavailable(const std::string &device_id) {
     return false;
   }
 
-  // Check expiration
+  // Expiry is checked lazily so idle faults disappear the next time the
+  // affected device is queried without requiring a background janitor.
   auto now = std::chrono::steady_clock::now();
   if (now >= it->second.expires_at) {
     s.device_unavailable_faults.erase(it);
@@ -80,10 +73,6 @@ bool is_device_unavailable(const std::string &device_id) {
 
   return true;
 }
-
-// -----------------------------
-// Signal faults
-// -----------------------------
 
 void inject_signal_fault(const std::string &device_id,
                          const std::string &signal_id, int64_t duration_ms) {
@@ -109,7 +98,8 @@ bool is_signal_faulted(const std::string &device_id,
   auto now = std::chrono::steady_clock::now();
   auto &faults = it->second;
 
-  // Remove expired faults
+  // Signal faults are also cleaned up lazily on query so the stored state stays
+  // small without a dedicated maintenance thread.
   faults.erase(std::remove_if(
                    faults.begin(), faults.end(),
                    [now](const SignalFault &f) { return now >= f.expires_at; }),
@@ -124,10 +114,6 @@ bool is_signal_faulted(const std::string &device_id,
 
   return false;
 }
-
-// -----------------------------
-// Call latency faults
-// -----------------------------
 
 void inject_call_latency(const std::string &device_id, int64_t latency_ms) {
   State &s = state();
@@ -147,10 +133,6 @@ int64_t get_call_latency(const std::string &device_id) {
   return it->second.latency_ms;
 }
 
-// -----------------------------
-// Call failure faults
-// -----------------------------
-
 void inject_call_failure(const std::string &device_id,
                          const std::string &function_id, double failure_rate) {
   State &s = state();
@@ -159,7 +141,8 @@ void inject_call_failure(const std::string &device_id,
   fault.function_id = function_id;
   fault.failure_rate = failure_rate;
 
-  // Replace existing fault for this function, or add new one
+  // Each device/function pair has at most one active probabilistic rule; new
+  // requests replace the old rate instead of stacking multiple rules.
   auto &faults = s.call_failure_faults[device_id];
   auto it = std::find_if(faults.begin(), faults.end(),
                          [&function_id](const CallFailureFault &f) {
@@ -185,7 +168,8 @@ bool should_call_fail(const std::string &device_id,
   // Find fault for this function
   for (const auto &fault : it->second) {
     if (fault.function_id == function_id) {
-      // Roll the dice
+      // Failure injection is evaluated independently on each call using the
+      // process-local RNG captured in the singleton state.
       std::uniform_real_distribution<double> dist(0.0, 1.0);
       return dist(s.rng) < fault.failure_rate;
     }

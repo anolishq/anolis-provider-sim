@@ -1,5 +1,10 @@
 #pragma once
 
+/**
+ * @file framed_stdio.hpp
+ * @brief Length-prefixed stdio transport helpers for provider-sim ADPP frames.
+ */
+
 #include <cstdint>
 #include <istream>
 #include <ostream>
@@ -8,22 +13,23 @@
 
 namespace transport {
 
-// ADPP stdio frame size guardrail: 1 MiB max payload.
+/** @brief ADPP stdio frame size guardrail: 1 MiB maximum payload. */
 constexpr uint32_t kMaxFrameBytes = 1024u * 1024u;
 
-// Reads exactly n bytes into buf. Returns false on EOF or stream failure before
-// n bytes.
+/** @brief Read exactly `n` bytes or fail on EOF/stream error. */
 bool read_exact(std::istream &in, uint8_t *buf, size_t n);
 
-// Reads one length-prefixed frame (uint32_le + payload bytes).
-// Returns:
-//  - true  => frame read successfully into out
-//  - false => EOF (err empty) or fatal protocol/IO error (err non-empty)
+/**
+ * @brief Read one length-prefixed frame from the input stream.
+ *
+ * Error handling:
+ * Returns `false` on clean EOF or protocol/stream failure. `err` stays empty
+ * for clean EOF and contains a message for fatal frame errors.
+ */
 bool read_frame(std::istream &in, std::vector<uint8_t> &out, std::string &err,
                 uint32_t max_len = kMaxFrameBytes);
 
-// Writes one length-prefixed frame (uint32_le + payload bytes) and flushes.
-// Returns false on error and sets err.
+/** @brief Write one length-prefixed frame and flush the output stream. */
 bool write_frame(std::ostream &out, const uint8_t *data, size_t len,
                  std::string &err, uint32_t max_len = kMaxFrameBytes);
 

@@ -1,3 +1,12 @@
+/**
+ * @file health.cpp
+ * @brief Health projections derived from provider-sim startup outcomes.
+ *
+ * Provider-sim health is intentionally startup-centric: it reports whether the
+ * configured roster initialized cleanly and mirrors any degraded startup
+ * results into provider and per-device health views.
+ */
+
 #include "core/health.hpp"
 
 #include <cstddef>
@@ -29,6 +38,9 @@ ProviderHealth make_provider_health(const DeviceInitializationReport &report) {
   const std::size_t failed =
       explicit_failed > inferred_failed ? explicit_failed : inferred_failed;
 
+  // Degraded startup is defined by missing initialized devices, not by current
+  // runtime dynamics, because the sim provider does not maintain a separate
+  // hardware-reachability layer after initialization.
   if (failed > 0U) {
     health.set_state(ProviderHealth::STATE_DEGRADED);
     health.set_message("startup degraded: " + std::to_string(failed) + " of " +
@@ -89,6 +101,8 @@ make_get_health_devices(const DeviceInitializationReport &report) {
     seen_device_ids.insert(device.device_id());
   }
 
+  // Explicit startup failures take precedence when they are available because
+  // they preserve the concrete failure reason for operator diagnostics.
   for (const auto &failed : report.failed_devices) {
     if (seen_device_ids.find(failed.device_id) != seen_device_ids.end()) {
       continue;

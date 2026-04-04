@@ -1,5 +1,10 @@
 #pragma once
 
+/**
+ * @file chaos_control_device.hpp
+ * @brief Synthetic control-only device that exposes runtime fault injection APIs.
+ */
+
 #include <map>
 #include <string>
 #include <vector>
@@ -15,26 +20,23 @@ using anolis::deviceprovider::v1::Device;
 using anolis::deviceprovider::v1::SignalValue;
 using anolis::deviceprovider::v1::Value;
 
-// Device ID
+/** @brief Reserved device ID for the built-in chaos control surface. */
 constexpr const char *kDeviceId = "chaos_control";
 
-// Initialize device state
+/** @brief Initialize the underlying fault injection state. */
 void init();
 
-// No physics for control device
-// void update_physics(double dt);  -- not needed
-
-// Get device info
+/** @brief Return the synthetic device descriptor for the chaos control surface. */
 Device get_device_info(bool include_health = false);
 
-// Get capabilities
+/** @brief Return the fixed capability surface for chaos fault injection controls. */
 CapabilitySet get_capabilities();
 
-// Read signals (no signals for control device)
+/** @brief Return no signals; this device is control-only by design. */
 std::vector<SignalValue>
 read_signals(const std::vector<std::string> &signal_ids);
 
-// Call function (fault injection controls)
+/** @brief Execute one fault injection control function. */
 CallResult call_function(uint32_t function_id,
                          const std::map<std::string, Value> &args);
 

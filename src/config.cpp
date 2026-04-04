@@ -1,3 +1,12 @@
+/**
+ * @file config.cpp
+ * @brief YAML loading and validation for provider-sim configuration.
+ *
+ * The loader validates mode-specific simulation keys, rejects deprecated or
+ * unknown simulation settings, and preserves device-type-specific config
+ * subtrees for later device construction.
+ */
+
 #include "config.hpp"
 #include <filesystem>
 #include <iostream>
@@ -12,7 +21,6 @@ namespace {
 constexpr const char *kReservedChaosControlId = "chaos_control";
 }
 
-// Parse simulation mode from string
 SimulationMode parse_simulation_mode(const std::string &mode_str) {
   if (mode_str == "non_interacting") {
     return SimulationMode::NonInteracting;
@@ -50,7 +58,8 @@ ProviderConfig load_config(const std::string &path) {
   ProviderConfig config;
   config.config_file_path = fs::absolute(path).string();
 
-  // Parse optional provider section
+  // The provider section is optional, but when present its name must be a
+  // stable identifier because it may appear in multi-provider simulation setups.
   if (yaml["provider"]) {
     if (!yaml["provider"].IsMap()) {
       throw std::runtime_error("[CONFIG] 'provider' section must be a map");
@@ -88,7 +97,8 @@ ProviderConfig load_config(const std::string &path) {
     }
   }
 
-  // Parse devices section
+  // Device entries preserve all type-specific keys so the loader can validate
+  // the common envelope here without needing to understand every device schema.
   if (yaml["devices"]) {
     if (!yaml["devices"].IsSequence()) {
       throw std::runtime_error("'devices' must be a sequence");
@@ -198,7 +208,8 @@ ProviderConfig load_config(const std::string &path) {
     }
   }
 
-  // Parse simulation.tick_rate_hz (required for non_interacting and sim)
+  // Tick rate is mode-dependent: ignored in inert mode and required in the two
+  // modes that actually run a ticking simulation loop.
   if (yaml["simulation"]["tick_rate_hz"]) {
     double tick_rate = 0.0;
     try {
@@ -272,7 +283,8 @@ ProviderConfig load_config(const std::string &path) {
     }
   };
 
-  // Startup validation matrix
+  // Mode validation is explicit so unsupported combinations fail fast with a
+  // config error instead of silently degrading into another simulation mode.
   switch (config.simulation_mode) {
   case SimulationMode::NonInteracting:
     ensure_mode_allowed_keys({"mode", "tick_rate_hz"}, "non_interacting");

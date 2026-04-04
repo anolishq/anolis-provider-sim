@@ -1,3 +1,8 @@
+/**
+ * @file framed_stdio.cpp
+ * @brief Length-prefixed stdio framing helpers for provider-sim ADPP traffic.
+ */
+
 #include "framed_stdio.hpp"
 
 #include <array>
@@ -42,9 +47,8 @@ bool read_frame(std::istream &in, std::vector<uint8_t> &out, std::string &err,
 
   uint8_t hdr[4] = {0, 0, 0, 0};
 
-  // Attempt to read header; distinguish clean EOF vs truncated header.
-  // We can't rely on a single read_exact call to detect "clean EOF" (0 bytes).
-  // So do one byte peek-read pattern:
+  // Distinguish clean EOF before the next frame from a truncated header. A
+  // full read_exact call cannot tell those cases apart by itself.
   in.read(reinterpret_cast<char *>(hdr), 1);
   if (in.gcount() == 0) {
     // Clean EOF
