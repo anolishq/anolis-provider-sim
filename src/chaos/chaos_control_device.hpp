@@ -2,7 +2,8 @@
 
 /**
  * @file chaos_control_device.hpp
- * @brief Synthetic control-only device that exposes runtime fault injection APIs.
+ * @brief Synthetic control-only device that exposes runtime fault injection
+ * APIs.
  */
 
 #include <map>
@@ -26,10 +27,12 @@ constexpr const char *kDeviceId = "chaos_control";
 /** @brief Initialize the underlying fault injection state. */
 void init();
 
-/** @brief Return the synthetic device descriptor for the chaos control surface. */
+/** @brief Return the synthetic device descriptor for the chaos control surface.
+ */
 Device get_device_info(bool include_health = false);
 
-/** @brief Return the fixed capability surface for chaos fault injection controls. */
+/** @brief Return the fixed capability surface for chaos fault injection
+ * controls. */
 CapabilitySet get_capabilities();
 
 /** @brief Return no signals; this device is control-only by design. */

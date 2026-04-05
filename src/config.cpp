@@ -59,7 +59,8 @@ ProviderConfig load_config(const std::string &path) {
   config.config_file_path = fs::absolute(path).string();
 
   // The provider section is optional, but when present its name must be a
-  // stable identifier because it may appear in multi-provider simulation setups.
+  // stable identifier because it may appear in multi-provider simulation
+  // setups.
   if (yaml["provider"]) {
     if (!yaml["provider"].IsMap()) {
       throw std::runtime_error("[CONFIG] 'provider' section must be a map");

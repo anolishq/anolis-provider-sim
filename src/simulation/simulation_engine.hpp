@@ -2,7 +2,8 @@
 
 /**
  * @file simulation_engine.hpp
- * @brief Backend-agnostic simulation engine contract used by the sim provider ticker.
+ * @brief Backend-agnostic simulation engine contract used by the sim provider
+ * ticker.
  */
 
 #include <cstdint>
@@ -50,7 +51,8 @@ public:
   /** @brief Initialize the backend from its mode-specific config path. */
   virtual void initialize(const std::string &config_path) = 0;
 
-  /** @brief Publish the provider identity when a backend needs it for routing. */
+  /** @brief Publish the provider identity when a backend needs it for routing.
+   */
   virtual void set_provider_id(const std::string &provider_id) {
     (void)provider_id;
   }

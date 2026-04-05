@@ -2,7 +2,8 @@
 
 /**
  * @file config.hpp
- * @brief Provider configuration types and parsing entry points for anolis-provider-sim.
+ * @brief Provider configuration types and parsing entry points for
+ * anolis-provider-sim.
  */
 
 #include <map>
@@ -23,7 +24,8 @@ enum class SimulationMode {
 };
 
 /**
- * @brief Startup behavior when one or more configured devices fail to initialize.
+ * @brief Startup behavior when one or more configured devices fail to
+ * initialize.
  */
 enum class StartupPolicy {
   Strict,   // Abort startup on first init failure

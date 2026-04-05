@@ -15,7 +15,8 @@
 namespace sim_adapters {
 
 /**
- * @brief Abstract adapter between provider-sim and an external simulation service.
+ * @brief Abstract adapter between provider-sim and an external simulation
+ * service.
  *
  * Implementations translate provider actuator snapshots into protocol-specific
  * updates and translate remote sensor/command outputs back into the generic
@@ -29,12 +30,14 @@ public:
   virtual void connect(const std::string &address) = 0;
   /** @brief Load adapter-specific protocol or graph configuration. */
   virtual void load_config(const std::string &config_path) = 0;
-  /** @brief Register the provider identity and active devices with the backend. */
+  /** @brief Register the provider identity and active devices with the backend.
+   */
   virtual void
   register_provider(const std::string &provider_name,
                     const std::vector<std::string> &device_ids) = 0;
 
-  /** @brief Publish the current actuator snapshot to the external simulation. */
+  /** @brief Publish the current actuator snapshot to the external simulation.
+   */
   virtual bool update_signals(const std::map<std::string, double> &actuators,
                               const std::string &unit,
                               std::chrono::milliseconds timeout) = 0;
@@ -43,7 +46,8 @@ public:
   virtual std::map<std::string, double>
   read_signals(const std::vector<std::string> &signal_paths) = 0;
 
-  /** @brief Drain any backend-emitted commands queued for provider execution. */
+  /** @brief Drain any backend-emitted commands queued for provider execution.
+   */
   virtual std::vector<sim_engine::Command> drain_commands() = 0;
 
   /** @brief List signal paths known to the adapter, when supported. */

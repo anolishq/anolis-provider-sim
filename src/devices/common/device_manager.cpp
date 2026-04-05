@@ -1,6 +1,7 @@
 /**
  * @file device_manager.cpp
- * @brief Coordination layer between registered devices, signal registry, and simulation backends.
+ * @brief Coordination layer between registered devices, signal registry, and
+ * simulation backends.
  *
  * This module owns the provider's shared simulation state. Device handlers call
  * into it on demand, while the background ticker uses it to collect actuator

@@ -32,7 +32,8 @@ void handle_read_signals(
     const anolis::deviceprovider::v1::ReadSignalsRequest &req,
     anolis::deviceprovider::v1::Response &resp);
 
-/** @brief Execute a device function by numeric or resolved symbolic identifier. */
+/** @brief Execute a device function by numeric or resolved symbolic identifier.
+ */
 void handle_call(const anolis::deviceprovider::v1::CallRequest &req,
                  anolis::deviceprovider::v1::Response &resp);
 
@@ -40,7 +41,8 @@ void handle_call(const anolis::deviceprovider::v1::CallRequest &req,
 void handle_get_health(const anolis::deviceprovider::v1::GetHealthRequest &req,
                        anolis::deviceprovider::v1::Response &resp);
 
-/** @brief Return the standard unimplemented status for unsupported operations. */
+/** @brief Return the standard unimplemented status for unsupported operations.
+ */
 void handle_unimplemented(anolis::deviceprovider::v1::Response &resp);
 
 } // namespace handlers

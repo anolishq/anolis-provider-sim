@@ -2,7 +2,8 @@
 
 /**
  * @file signal_registry.hpp
- * @brief Thread-safe registry that mediates between device state and simulation outputs.
+ * @brief Thread-safe registry that mediates between device state and simulation
+ * outputs.
  */
 
 #include "signal_source.hpp"

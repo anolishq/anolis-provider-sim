@@ -1,6 +1,7 @@
 /**
  * @file fault_injection.cpp
- * @brief Process-wide fault injection storage and expiry behavior for provider-sim.
+ * @brief Process-wide fault injection storage and expiry behavior for
+ * provider-sim.
  *
  * Fault state is shared across the process and mutated only through the chaos
  * control device. Expiring faults are cleaned up lazily on read paths.

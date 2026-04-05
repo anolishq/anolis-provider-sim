@@ -2,7 +2,8 @@
 
 /**
  * @file startup_report.hpp
- * @brief Startup-report types used to project readiness and health in provider-sim.
+ * @brief Startup-report types used to project readiness and health in
+ * provider-sim.
  */
 
 #include <cstddef>

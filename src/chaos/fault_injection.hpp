@@ -55,10 +55,12 @@ bool is_signal_faulted(const std::string &device_id,
 
 /** @brief Add artificial call latency for one device. */
 void inject_call_latency(const std::string &device_id, int64_t latency_ms);
-/** @brief Return the currently configured artificial call latency for one device. */
+/** @brief Return the currently configured artificial call latency for one
+ * device. */
 int64_t get_call_latency(const std::string &device_id);
 
-/** @brief Inject or replace a probabilistic call failure rule for one function. */
+/** @brief Inject or replace a probabilistic call failure rule for one function.
+ */
 void inject_call_failure(const std::string &device_id,
                          const std::string &function_id, double failure_rate);
 /** @brief Sample whether a call should fail under the current fault rules. */

@@ -2,7 +2,8 @@
 
 /**
  * @file device_manager.hpp
- * @brief Shared device and physics-coordination entry points used by ADPP handlers.
+ * @brief Shared device and physics-coordination entry points used by ADPP
+ * handlers.
  */
 
 #include <cstdint>
@@ -35,10 +36,12 @@ void initialize_physics(
     const anolis_provider_sim::ProviderConfig &provider_config,
     const std::vector<std::string> &active_device_ids);
 
-/** @brief Start the background ticker thread when the configured mode uses one. */
+/** @brief Start the background ticker thread when the configured mode uses one.
+ */
 void start_physics();
 
-/** @brief Stop the background ticker thread and release physics coordination state. */
+/** @brief Stop the background ticker thread and release physics coordination
+ * state. */
 void stop_physics();
 
 /** @brief Replace the simulation engine implementation used by the ticker. */
@@ -51,10 +54,10 @@ void set_simulation_engine(
  * This is exposed for device modules that need direct access to coordination
  * state during reads or control updates.
  */
-extern sim_coordination::SignalRegistry
-    *g_signal_registry;
+extern sim_coordination::SignalRegistry *g_signal_registry;
 
-/** @brief List currently active devices, optionally including health details. */
+/** @brief List currently active devices, optionally including health details.
+ */
 std::vector<Device> list_devices(bool include_health = false);
 
 /** @brief Return the declared capability surface for one active device. */
@@ -68,7 +71,8 @@ read_signals(const std::string &device_id,
              const std::vector<std::string> &signal_ids);
 
 /**
- * @brief Execute one device function through the registered device implementation.
+ * @brief Execute one device function through the registered device
+ * implementation.
  */
 CallResult call_function(const std::string &device_id, uint32_t function_id,
                          const std::map<std::string, Value> &args);

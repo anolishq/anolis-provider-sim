@@ -142,17 +142,16 @@ int main(int argc, char **argv) {
       const std::string mode_str =
           (config.simulation_mode == anolis_provider_sim::SimulationMode::Inert)
               ? "inert"
-              : (config.simulation_mode ==
-                 anolis_provider_sim::SimulationMode::NonInteracting)
-                    ? "non_interacting"
-                    : "sim";
-      PSIM_LOG_INFO("Main",
-                    "Config valid: " +
-                        config.provider_name.value_or("provider-sim") +
-                        ", mode=" + mode_str + ", " +
-                        std::to_string(
-                            init_report.successful_device_ids.size()) +
-                        " device(s)");
+          : (config.simulation_mode ==
+             anolis_provider_sim::SimulationMode::NonInteracting)
+              ? "non_interacting"
+              : "sim";
+      PSIM_LOG_INFO(
+          "Main",
+          "Config valid: " + config.provider_name.value_or("provider-sim") +
+              ", mode=" + mode_str + ", " +
+              std::to_string(init_report.successful_device_ids.size()) +
+              " device(s)");
       return 0;
     }
 
