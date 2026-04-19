@@ -8,8 +8,8 @@ param(
 $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$protoFile = Join-Path $repoRoot "external\anolis-protocol\spec\device-provider\protocol.proto"
-$protoPath = Join-Path $repoRoot "external\anolis-protocol\spec\device-provider"
+$protoRoot = Join-Path $repoRoot "external\anolis-protocol\proto"
+$protoV1Dir = Join-Path $protoRoot "anolis\deviceprovider\v1"
 $outputDir = if ($OutputDir) {
     if ([System.IO.Path]::IsPathRooted($OutputDir)) {
         $OutputDir
@@ -96,10 +96,22 @@ if (-not $protoc) {
     }
 }
 
-# Check if proto file exists
-if (-not (Test-Path $protoFile)) {
-    Write-Host "ERROR: Protocol file not found: $protoFile" -ForegroundColor Red
+# Check if split proto directory exists
+if (-not (Test-Path $protoV1Dir)) {
+    Write-Host "ERROR: Protocol directory not found: $protoV1Dir" -ForegroundColor Red
     exit 1
+}
+
+$protoFiles = Get-ChildItem -Path $protoV1Dir -Filter "*.proto" -File | Sort-Object Name
+if (-not $protoFiles) {
+    Write-Host "ERROR: No .proto files found in: $protoV1Dir" -ForegroundColor Red
+    exit 1
+}
+
+$protoArgs = @()
+foreach ($proto in $protoFiles) {
+    $relative = $proto.FullName.Substring($protoRoot.Length + 1).Replace('\\', '/')
+    $protoArgs += $relative
 }
 
 # Create output directory if needed
@@ -108,14 +120,34 @@ if (-not (Test-Path $outputDir)) {
 }
 
 # Generate Python bindings
-Write-Host "  Proto file: $protoFile"
+Write-Host "  Proto dir: $protoV1Dir"
 Write-Host "  Output dir: $outputDir"
 
-& $protoc --python_out=$outputDir --proto_path=$protoPath protocol.proto
+& $protoc --python_out=$outputDir --proto_path=$protoRoot @protoArgs
 
 if ($LASTEXITCODE -eq 0) {
-    $outputFile = Join-Path $outputDir "protocol_pb2.py"
-    Write-Host "[OK] Generated: $outputFile" -ForegroundColor Green
+    $compatFile = Join-Path $outputDir "protocol_pb2.py"
+    $compatContent = @'
+"""Compatibility shim for legacy protocol_pb2 imports.
+
+Generated from split ADPP v1 protos in anolis/deviceprovider/v1.
+"""
+
+from anolis.deviceprovider.v1.call_pb2 import *
+from anolis.deviceprovider.v1.envelope_pb2 import *
+from anolis.deviceprovider.v1.handshake_pb2 import *
+from anolis.deviceprovider.v1.health_pb2 import *
+from anolis.deviceprovider.v1.inventory_pb2 import *
+from anolis.deviceprovider.v1.readiness_pb2 import *
+from anolis.deviceprovider.v1.status_pb2 import *
+from anolis.deviceprovider.v1.telemetry_pb2 import *
+from anolis.deviceprovider.v1.types_pb2 import *
+from anolis.deviceprovider.v1.value_pb2 import *
+'@
+    Set-Content -Path $compatFile -Value $compatContent -Encoding UTF8
+
+    Write-Host "[OK] Generated Python protos under: $(Join-Path $outputDir 'anolis\deviceprovider\v1')" -ForegroundColor Green
+    Write-Host "[OK] Generated compatibility shim: $compatFile" -ForegroundColor Green
 } else {
     Write-Host "[FAIL] protoc failed with exit code $LASTEXITCODE" -ForegroundColor Red
     exit 1

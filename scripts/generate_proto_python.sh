@@ -4,8 +4,8 @@
 set -e
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-proto_file="$repo_root/external/anolis-protocol/spec/device-provider/protocol.proto"
-proto_path="$repo_root/external/anolis-protocol/spec/device-provider"
+proto_root="$repo_root/external/anolis-protocol/proto"
+proto_v1_dir="$proto_root/anolis/deviceprovider/v1"
 output_dir="${1:-${ANOLIS_PROVIDER_SIM_BUILD_DIR:-$repo_root/build}}"
 if [[ "$output_dir" != /* ]]; then
     output_dir="$repo_root/$output_dir"
@@ -35,20 +35,50 @@ if ! command -v protoc &> /dev/null; then
     fi
 fi
 
-# Check if proto file exists
-if [ ! -f "$proto_file" ]; then
-    echo "ERROR: Protocol file not found: $proto_file"
+# Check if split proto directory exists
+if [ ! -d "$proto_v1_dir" ]; then
+    echo "ERROR: Protocol directory not found: $proto_v1_dir"
     exit 1
 fi
+
+mapfile -t proto_files < <(find "$proto_v1_dir" -maxdepth 1 -name '*.proto' -printf '%f\n' | sort)
+if [ ${#proto_files[@]} -eq 0 ]; then
+    echo "ERROR: No .proto files found in: $proto_v1_dir"
+    exit 1
+fi
+
+proto_args=()
+for file in "${proto_files[@]}"; do
+    proto_args+=("anolis/deviceprovider/v1/$file")
+done
 
 # Create output directory if needed
 mkdir -p "$output_dir"
 
 # Generate Python bindings
-echo "  Proto file: $proto_file"
+echo "  Proto dir: $proto_v1_dir"
 echo "  Output dir: $output_dir"
 
-$protoc_cmd --python_out="$output_dir" --proto_path="$proto_path" protocol.proto
+$protoc_cmd --python_out="$output_dir" --proto_path="$proto_root" "${proto_args[@]}"
 
-output_file="$output_dir/protocol_pb2.py"
-echo "[PASS] Generated: $output_file"
+compat_file="$output_dir/protocol_pb2.py"
+cat > "$compat_file" <<'EOF'
+"""Compatibility shim for legacy protocol_pb2 imports.
+
+Generated from split ADPP v1 protos in anolis/deviceprovider/v1.
+"""
+
+from anolis.deviceprovider.v1.call_pb2 import *
+from anolis.deviceprovider.v1.envelope_pb2 import *
+from anolis.deviceprovider.v1.handshake_pb2 import *
+from anolis.deviceprovider.v1.health_pb2 import *
+from anolis.deviceprovider.v1.inventory_pb2 import *
+from anolis.deviceprovider.v1.readiness_pb2 import *
+from anolis.deviceprovider.v1.status_pb2 import *
+from anolis.deviceprovider.v1.telemetry_pb2 import *
+from anolis.deviceprovider.v1.types_pb2 import *
+from anolis.deviceprovider.v1.value_pb2 import *
+EOF
+
+echo "[PASS] Generated Python protos under: $output_dir/anolis/deviceprovider/v1"
+echo "[PASS] Generated compatibility shim: $compat_file"
