@@ -27,7 +27,7 @@ echo $env:VCPKG_ROOT
 ## 2) Clone repository
 
 ```powershell
-git clone https://github.com/FEASTorg/anolis-provider-sim.git
+git clone https://github.com/anolishq/anolis-provider-sim.git
 cd anolis-provider-sim
 git submodule update --init --recursive
 ```

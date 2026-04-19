@@ -1,6 +1,6 @@
 # anolis-provider-sim
 
-[![CI](https://github.com/FEASTorg/anolis-provider-sim/actions/workflows/ci.yml/badge.svg)](https://github.com/FEASTorg/anolis-provider-sim/actions/workflows/ci.yml)
+[![CI](https://github.com/anolishq/anolis-provider-sim/actions/workflows/ci.yml/badge.svg)](https://github.com/anolishq/anolis-provider-sim/actions/workflows/ci.yml)
 
 Simulation device provider for anolis runtime, implementing the Anolis Device Provider Protocol (ADPP) v1.
 
@@ -534,5 +534,5 @@ void initialize_device() {
 ```
 
 See
-[Anolis Provider Safe Initialization Contract](https://github.com/FEASTorg/anolis/blob/main/docs/providers.md#safe-initialization-contract)
+[Anolis Provider Safe Initialization Contract](https://github.com/anolishq/anolis/blob/main/docs/providers.md#safe-initialization-contract)
 for complete requirements.

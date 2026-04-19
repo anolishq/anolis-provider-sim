@@ -43,7 +43,7 @@ echo "$VCPKG_ROOT"
 ## 3) Clone repository
 
 ```bash
-git clone https://github.com/FEASTorg/anolis-provider-sim.git
+git clone https://github.com/anolishq/anolis-provider-sim.git
 cd anolis-provider-sim
 git submodule update --init --recursive
 ```

@@ -153,7 +153,7 @@ Use these files for concrete examples in this repo:
 
 Use FluxGraph docs as the authoritative schema source:
 
-- `https://github.com/FEASTorg/fluxgraph/blob/main/docs/schema-yaml.md`
+- `https://github.com/anolishq/fluxgraph/blob/main/docs/schema-yaml.md`
 
 ## Runtime Integration
 

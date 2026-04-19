@@ -4,7 +4,7 @@
 # Revisit immutable SHA pinning before release hardening.
 
 fluxgraph:
-  repository: FEASTorg/fluxgraph
+  repository: anolishq/fluxgraph
   ref: main
   updated_utc: 2026-03-03
   rationale: "Keep floating main and rely on CI SHA logging for traceability"
