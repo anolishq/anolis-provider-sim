@@ -110,7 +110,7 @@ if (-not $protoFiles) {
 
 $protoArgs = @()
 foreach ($proto in $protoFiles) {
-    $relative = $proto.FullName.Substring($protoRoot.Length + 1).Replace('\\', '/')
+    $relative = $proto.FullName.Substring($protoRoot.Length + 1).Replace('\', '/')
     $protoArgs += $relative
 }
 
