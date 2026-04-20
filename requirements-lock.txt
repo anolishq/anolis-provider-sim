@@ -1,4 +1,5 @@
-﻿colorama==0.4.6
+﻿anolis-protocol @ https://github.com/anolishq/anolis-protocol/releases/download/v1.1.0/anolis_protocol-1.1.0-py3-none-any.whl
+colorama==0.4.6
 iniconfig==2.3.0
 librt==0.8.1
 mypy==1.19.1

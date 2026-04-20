@@ -12,50 +12,6 @@ def repo_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
-def resolve_build_dir(root: Path | None = None) -> Path:
-    """Resolve build directory used for generated protocol_pb2 bindings."""
-    root = root or repo_root()
-    raw = os.environ.get("ANOLIS_PROVIDER_SIM_BUILD_DIR")
-    if raw:
-        candidate = Path(raw)
-        if not candidate.is_absolute():
-            candidate = root / candidate
-        return candidate.resolve()
-
-    candidates = [
-        root / "build",
-        root / "build" / "dev-release",
-        root / "build" / "dev-debug",
-        root / "build" / "dev-release-fluxgraph",
-        root / "build" / "dev-windows-release",
-        root / "build" / "dev-windows-debug",
-        root / "build" / "dev-windows-release-fluxgraph",
-        root / "build" / "ci-linux-release",
-        root / "build" / "ci-linux-release-strict",
-        root / "build" / "ci-linux-release-fluxgraph",
-        root / "build" / "ci-linux-release-fluxgraph-strict",
-        root / "build" / "ci-windows-release",
-        root / "build" / "ci-windows-release-strict",
-        root / "build" / "ci-windows-release-fluxgraph",
-        root / "build" / "ci-windows-release-fluxgraph-strict",
-    ]
-
-    for candidate in candidates:
-        if (candidate / "protocol_pb2.py").exists():
-            return candidate.resolve()
-
-    return (root / "build").resolve()
-
-
-def add_build_dir_to_sys_path(build_dir: Path) -> None:
-    """Add build directory to sys.path for protocol_pb2 imports."""
-    import sys
-
-    build_dir_str = str(build_dir)
-    if build_dir_str not in sys.path:
-        sys.path.insert(0, build_dir_str)
-
-
 def resolve_provider_executable(root: Path | None = None) -> Path:
     """Resolve provider executable path from env var or common build locations."""
     root = root or repo_root()

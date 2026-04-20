@@ -36,7 +36,7 @@ def _read_speed(client: AdppClient) -> float:
 
 
 def run_non_interacting_example() -> int:
-    protocol, build_dir = load_protocol_module()
+    protocol = load_protocol_module()
     root = repo_root()
     provider_exe = resolve_provider_executable(root)
     config_path = resolve_config_path("examples/non_interacting_mode/provider.yaml", root)
@@ -45,7 +45,6 @@ def run_non_interacting_example() -> int:
     print("Non-Interacting Mode Example")
     print("=" * 60)
     print(f"Provider: {provider_exe}")
-    print(f"Build dir: {build_dir}")
     print(f"Config: {config_path}")
 
     if not config_path.exists():

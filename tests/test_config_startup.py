@@ -185,7 +185,7 @@ def test_strict_startup_abort(provider_exe: Path) -> None:
 
 
 def test_degraded_startup_continue(provider_exe: Path) -> None:
-    protocol, _ = load_protocol_module()
+    protocol = load_protocol_module()
     with tempfile.TemporaryDirectory(prefix="provider-sim-cfg-") as td:
         cfg = write_config(
             Path(td),

@@ -33,7 +33,7 @@ def _read_temp(client: AdppClient) -> float:
 
 
 def run_sim_example(duration_sec: int, port: int) -> int:
-    protocol, build_dir = load_protocol_module()
+    protocol = load_protocol_module()
     root = repo_root()
     provider_exe = resolve_fluxgraph_provider_executable(root)
     fluxgraph_server = resolve_fluxgraph_server(root)
@@ -43,7 +43,6 @@ def run_sim_example(duration_sec: int, port: int) -> int:
     print("Sim Mode Example")
     print("=" * 60)
     print(f"Provider: {provider_exe}")
-    print(f"Build dir: {build_dir}")
     print(f"FluxGraph server: {fluxgraph_server}")
     print(f"Config: {config_path}")
     print(f"Port: {port}")

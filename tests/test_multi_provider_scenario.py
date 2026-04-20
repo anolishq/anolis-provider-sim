@@ -118,7 +118,7 @@ def _wait_ready_parallel(
 
 
 def run_scenario(port: int) -> int:
-    protocol, _ = load_protocol_module()
+    protocol = load_protocol_module()
     root = repo_root()
 
     provider_exe = resolve_fluxgraph_provider_executable(root)

@@ -26,7 +26,7 @@ def _read_temp_pair(client: AdppClient) -> tuple[float, float]:
 
 
 def run_inert_example() -> int:
-    protocol, build_dir = load_protocol_module()
+    protocol = load_protocol_module()
     root = repo_root()
     provider_exe = resolve_provider_executable(root)
     config_path = resolve_config_path("examples/inert_mode/provider.yaml", root)
@@ -35,7 +35,6 @@ def run_inert_example() -> int:
     print("Inert Mode Example")
     print("=" * 60)
     print(f"Provider: {provider_exe}")
-    print(f"Build dir: {build_dir}")
     print(f"Config: {config_path}")
 
     if not config_path.exists():

@@ -12,7 +12,7 @@ from support.proto_bootstrap import load_protocol_module
 
 
 def main() -> int:
-    protocol, _ = load_protocol_module()
+    protocol = load_protocol_module()
 
     root = repo_root()
     exe_path = resolve_provider_executable(root)

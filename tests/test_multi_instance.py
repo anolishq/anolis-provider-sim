@@ -120,7 +120,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    protocol, _ = load_protocol_module()
+    protocol = load_protocol_module()
     root = repo_root()
 
     if args.exe:

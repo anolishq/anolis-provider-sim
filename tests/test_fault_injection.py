@@ -404,7 +404,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    protocol, _ = load_protocol_module()
+    protocol = load_protocol_module()
     root = repo_root()
     exe_path = resolve_provider_executable(root)
     config_path = resolve_config_path("config/provider-sim.yaml", root)

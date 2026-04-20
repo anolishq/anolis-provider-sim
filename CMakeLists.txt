@@ -262,29 +262,8 @@ if(BUILD_TESTING)
 
     add_subdirectory(tests/unit)
 
-    if(WIN32)
-        set(_python_gen_cmd
-            powershell.exe -NoProfile -ExecutionPolicy Bypass
-            -File ${CMAKE_SOURCE_DIR}/scripts/generate_proto_python.ps1
-            -OutputDir ${CMAKE_BINARY_DIR}
-        )
-    else()
-        set(_python_gen_cmd
-            bash ${CMAKE_SOURCE_DIR}/scripts/generate_proto_python.sh ${CMAKE_BINARY_DIR}
-        )
-    endif()
-
-    add_test(NAME provider.generate_proto_python COMMAND ${_python_gen_cmd})
-    set_tests_properties(provider.generate_proto_python PROPERTIES
-        LABELS "provider;integration"
-        FIXTURES_SETUP proto_python
-        TIMEOUT 120
-        ENVIRONMENT "ANOLIS_PROTOCOL_PROTO_DIR=${anolis_protocol_SOURCE_DIR}/proto"
-    )
-
     set(_provider_test_env
         "ANOLIS_PROVIDER_SIM_EXE=$<TARGET_FILE:anolis-provider-sim>"
-        "ANOLIS_PROVIDER_SIM_BUILD_DIR=${CMAKE_BINARY_DIR}"
     )
 
     add_test(
@@ -293,7 +272,6 @@ if(BUILD_TESTING)
     )
     set_tests_properties(provider.smoke PROPERTIES
         LABELS "provider;integration;smoke"
-        FIXTURES_REQUIRED proto_python
         TIMEOUT 60
         ENVIRONMENT "${_provider_test_env}"
     )
@@ -304,7 +282,6 @@ if(BUILD_TESTING)
     )
     set_tests_properties(provider.config_startup PROPERTIES
         LABELS "provider;integration;config"
-        FIXTURES_REQUIRED proto_python
         TIMEOUT 120
         ENVIRONMENT "${_provider_test_env}"
     )
@@ -315,7 +292,6 @@ if(BUILD_TESTING)
     )
     set_tests_properties(provider.adpp PROPERTIES
         LABELS "provider;integration;adpp"
-        FIXTURES_REQUIRED proto_python
         TIMEOUT 300
         ENVIRONMENT "${_provider_test_env}"
     )
@@ -326,7 +302,6 @@ if(BUILD_TESTING)
     )
     set_tests_properties(provider.multi PROPERTIES
         LABELS "provider;integration;multi"
-        FIXTURES_REQUIRED proto_python
         TIMEOUT 180
         ENVIRONMENT "${_provider_test_env}"
     )
@@ -337,7 +312,6 @@ if(BUILD_TESTING)
     )
     set_tests_properties(provider.fault PROPERTIES
         LABELS "provider;integration;fault"
-        FIXTURES_REQUIRED proto_python
         TIMEOUT 300
         ENVIRONMENT "${_provider_test_env}"
     )
@@ -349,7 +323,6 @@ if(BUILD_TESTING)
         )
         set_tests_properties(provider.fluxgraph.integration PROPERTIES
             LABELS "integration;fluxgraph"
-            FIXTURES_REQUIRED proto_python
             TIMEOUT 300
             ENVIRONMENT "${_provider_test_env}"
         )
@@ -360,7 +333,6 @@ if(BUILD_TESTING)
         )
         set_tests_properties(provider.fluxgraph.multi_provider PROPERTIES
             LABELS "integration;fluxgraph"
-            FIXTURES_REQUIRED proto_python
             TIMEOUT 900
             ENVIRONMENT "${_provider_test_env}"
         )

@@ -36,7 +36,7 @@ def _read_temp(client: AdppClient, signal_id: str = "tc1_temp") -> float:
 
 
 def run_fluxgraph_integration(duration: int, port: int) -> int:
-    protocol, _ = load_protocol_module()
+    protocol = load_protocol_module()
     root = repo_root()
 
     provider_exe = resolve_fluxgraph_provider_executable(root)
