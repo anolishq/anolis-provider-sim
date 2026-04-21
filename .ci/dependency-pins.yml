@@ -5,6 +5,6 @@
 
 fluxgraph:
   repository: anolishq/fluxgraph
-  ref: main
-  updated_utc: 2026-03-03
-  rationale: "Keep floating main and rely on CI SHA logging for traceability"
+  ref: v1.0.2
+  updated_utc: 2026-04-21
+  rationale: "Pinned to v1.0.2 release. Linux CI uses this ref to build fluxgraph-server for test execution."

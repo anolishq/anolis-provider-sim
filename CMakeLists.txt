@@ -147,26 +147,28 @@ set(SOURCES
 if(ENABLE_FLUXGRAPH)
     find_package(gRPC CONFIG REQUIRED)
 
-    # Generate FluxGraph protobuf + gRPC stubs from sibling repository.
-    # Allow override via -DFLUXGRAPH_DIR=path/to/fluxgraph
-    if(NOT DEFINED FLUXGRAPH_DIR)
-        set(FLUXGRAPH_DIR "${CMAKE_SOURCE_DIR}/../fluxgraph" CACHE PATH "Path to FluxGraph repository")
-    endif()
-
-    # Normalize to absolute path
-    get_filename_component(FLUXGRAPH_DIR_ABS "${FLUXGRAPH_DIR}" REALPATH)
-    set(FLUXGRAPH_PROTO_DIR "${FLUXGRAPH_DIR_ABS}/proto")
-    set(FLUXGRAPH_PROTO "${FLUXGRAPH_PROTO_DIR}/fluxgraph.proto")
-
-    if(NOT EXISTS "${FLUXGRAPH_PROTO}")
-        message(FATAL_ERROR
-            "FluxGraph proto not found at: ${FLUXGRAPH_PROTO}\n"
-            "Please ensure FluxGraph repository is cloned:\n"
-            "  Expected location: ${FLUXGRAPH_DIR_ABS}\n"
-            "  Or set custom path: cmake -DFLUXGRAPH_DIR=/path/to/fluxgraph ..."
+    # FluxGraph: fetch pinned release tarball by default; set FLUXGRAPH_DIR to use a source-tree override.
+    if(DEFINED FLUXGRAPH_DIR AND NOT FLUXGRAPH_DIR STREQUAL "")
+        get_filename_component(FLUXGRAPH_DIR_ABS "${FLUXGRAPH_DIR}" ABSOLUTE BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+        if(NOT EXISTS "${FLUXGRAPH_DIR_ABS}/proto/fluxgraph.proto")
+            message(FATAL_ERROR
+                "FluxGraph proto not found at: ${FLUXGRAPH_DIR_ABS}/proto/fluxgraph.proto\n"
+                "Set FLUXGRAPH_DIR to the root of the fluxgraph repository.")
+        endif()
+        set(FLUXGRAPH_PROTO_DIR "${FLUXGRAPH_DIR_ABS}/proto")
+        message(STATUS "Using FluxGraph source tree: ${FLUXGRAPH_DIR_ABS}")
+    else()
+        FetchContent_Declare(
+            fluxgraph_proto
+            URL https://github.com/anolishq/fluxgraph/releases/download/v1.0.2/fluxgraph-1.0.2-source.tar.gz
+            URL_HASH SHA256=152e91eb396cd0889ee9df1f96b91b378b7481e5eb70c6b6025dad6c21a872fb
         )
+        FetchContent_MakeAvailable(fluxgraph_proto)
+        set(FLUXGRAPH_PROTO_DIR "${fluxgraph_proto_SOURCE_DIR}/proto")
+        message(STATUS "FluxGraph proto: fetched v1.0.2 via FetchContent")
     endif()
 
+    set(FLUXGRAPH_PROTO "${FLUXGRAPH_PROTO_DIR}/fluxgraph.proto")
     message(STATUS "FluxGraph proto: ${FLUXGRAPH_PROTO}")
     message(STATUS "FluxGraph proto dir: ${FLUXGRAPH_PROTO_DIR}")
 
