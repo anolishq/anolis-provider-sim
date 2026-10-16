@@ -69,7 +69,7 @@ providers:
 
 ### Build from source (contributors)
 
-Install host prerequisites: CMake ≥ 3.20, Ninja, vcpkg, a C++17 compiler, Python 3.12.
+Install host prerequisites: CMake ≥ 3.20 (≥ 4.2 and Visual Studio 2026 for the Windows presets), Ninja, vcpkg, a C++17 compiler, Python 3.12.
 
 ```bash
 git clone https://github.com/anolishq/anolis-provider-sim.git
