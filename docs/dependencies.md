@@ -7,7 +7,7 @@ This document defines provider-sim policy for dependencies, CI lane tiers, prese
 1. `vcpkg-configuration.json` is the baseline source of truth.
 2. Lockfile pinning is not planned: the baseline SHA is the lock (org decision in anolishq/.github#93).
 3. Determinism is enforced via baseline pinning plus reviewed `vcpkg.json` changes.
-4. Windows builds use pinned MSVC/vcpkg ABI settings via `x64-windows-v143` overlay triplet.
+4. Windows builds use pinned MSVC/vcpkg ABI settings via the `x64-windows-v145` overlay triplet (`triplets/x64-windows-v145.cmake`).
 
 ## Python Dependency Policy
 
