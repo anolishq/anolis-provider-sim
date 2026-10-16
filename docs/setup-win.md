@@ -5,8 +5,8 @@ Build and validate `anolis-provider-sim` on Windows using Visual Studio presets.
 ## Prerequisites
 
 - Windows 10/11
-- Visual Studio 2022 (Desktop development with C++)
-- CMake >= 3.20
+- Visual Studio 2026 (Desktop development with C++)
+- CMake >= 4.2 (the presets use the `Visual Studio 18 2026` generator, added in CMake 4.2)
 - Git
 - Python 3.12+
 
