@@ -211,6 +211,23 @@ jobs:
             anolis-provider-sim-*-linux-arm64.tar.gz
             manifest-linux-arm64.json
 
+  aggregate-checksums:
+    name: Aggregate checksums
+    runs-on: ubuntu-24.04
+    needs: [release-linux-x86_64, release-linux-arm64]
+    steps:
+      - name: Regenerate SHA256SUMS across all release tarballs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # Each arch job uploads its tarball independently; the x86_64 job's
+        # SHA256SUMS does not cover the arm64 asset. Rebuild the checksum
+        # file from every tarball attached to the release, then replace it.
+        run: |
+          gh release download "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" --pattern 'anolis-provider-sim-*.tar.gz'
+          sha256sum anolis-provider-sim-*.tar.gz > SHA256SUMS
+          cat SHA256SUMS
+          gh release upload "${GITHUB_REF_NAME}" SHA256SUMS --clobber --repo "${GITHUB_REPOSITORY}"
+
   upload-metrics:
     name: Upload metrics to release
     runs-on: ubuntu-24.04
