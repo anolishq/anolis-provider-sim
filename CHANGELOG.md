@@ -13,6 +13,16 @@ commit messages only.
 
 ## [Unreleased]
 
+### Added
+
+- `chaos_control` function `inject_device_unreachable` (function id 6,
+  args `device_id`, `duration_ms`): for the duration, `ReadSignals` and
+  `CallFunction` on that device return `CODE_UNAVAILABLE`, as a board that
+  has gone dark on its bus. The device stays in `ListDevices` and
+  `DescribeDevice` still answers. It expires on its own and `clear_faults`
+  clears it. `inject_device_unavailable` is unchanged (`NOT_FOUND`).
+  Part of anolishq/anolis#429.
+
 ## [0.2.7] - 2026-08-01
 
 ### Added

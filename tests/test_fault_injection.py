@@ -4,6 +4,7 @@ Fault injection tests for anolis-provider-sim chaos_control API.
 
 Covers:
 - inject_device_unavailable
+- inject_device_unreachable
 - inject_signal_fault
 - inject_call_latency
 - inject_call_failure
@@ -17,7 +18,7 @@ import argparse
 import sys
 import time
 
-from support.assertions import assert_ok, require_signal, status_text
+from support.assertions import assert_ok, assert_status, list_devices_entries, require_signal, status_text
 from support.env import repo_root, resolve_config_path, resolve_provider_executable
 from support.framed_client import (
     AdppClient,
@@ -66,6 +67,60 @@ def test_device_unavailable(client: AdppClient, protocol) -> bool:
     assert len(resp.describe_device.capabilities.signals) == initial_signal_count
 
     print("OK: Device unavailable injection working correctly")
+    return True
+
+
+def test_device_unreachable(client: AdppClient, protocol) -> bool:
+    """Validate inject_device_unreachable returns UNAVAILABLE, then recovers."""
+    print("\n=== Test: Device Unreachable Injection ===")
+
+    unavailable_code = protocol.Status.Code.CODE_UNAVAILABLE
+
+    def inject(duration_ms: int):
+        return client.call_function(
+            "chaos_control",
+            6,
+            {
+                "device_id": make_string_value(protocol, "tempctl0"),
+                "duration_ms": make_int64_value(protocol, duration_ms),
+            },
+        )
+
+    def assert_reachable(context: str) -> None:
+        assert_ok(client.read_signals("tempctl0", ["tc1_temp"]), f"read tempctl0 {context}")
+        resp = client.call_function("tempctl0", 1, {"mode": make_string_value(protocol, "open")})
+        assert_ok(resp, f"call tempctl0 {context}")
+
+    assert_reachable("before injection")
+
+    assert_ok(inject(500), "inject_device_unreachable")
+
+    resp = client.read_signals("tempctl0", ["tc1_temp"])
+    assert_status(resp, unavailable_code, "read tempctl0 while unreachable")
+
+    resp = client.call_function("tempctl0", 1, {"mode": make_string_value(protocol, "closed")})
+    assert_status(resp, unavailable_code, "call tempctl0 while unreachable")
+
+    # The device stays in inventory and describable, as a configured board that
+    # has stopped answering on its bus.
+    resp = client.list_devices()
+    assert_ok(resp, "list_devices while tempctl0 unreachable")
+    assert "tempctl0" in {d.device_id for d in list_devices_entries(resp)}
+    assert_ok(client.describe_device("tempctl0"), "describe tempctl0 while unreachable")
+
+    assert_ok(client.read_signals("relayio0"), "read relayio0 while tempctl0 unreachable")
+
+    time.sleep(0.6)
+    assert_reachable("after expiration")
+
+    assert_ok(inject(10000), "inject_device_unreachable long")
+    assert_status(client.read_signals("tempctl0", ["tc1_temp"]), unavailable_code, "read before clear_faults")
+
+    resp = client.call_function("chaos_control", 5, {})
+    assert_ok(resp, "clear_faults")
+    assert_reachable("after clear_faults")
+
+    print("OK: Device unreachable injection working correctly")
     return True
 
 
@@ -326,6 +381,17 @@ def test_invalid_inputs(client: AdppClient, protocol) -> bool:
 
     resp = client.call_function(
         "chaos_control",
+        6,
+        {
+            "device_id": make_string_value(protocol, "tempctl0"),
+            "duration_ms": make_int64_value(protocol, 0),
+        },
+    )
+    assert resp.status.code == invalid_code, f"Expected invalid unreachable duration rejection, got {status_text(resp)}"
+    assert "duration_ms must be > 0" in resp.status.message
+
+    resp = client.call_function(
+        "chaos_control",
         3,
         {
             "device_id": make_string_value(protocol, "tempctl0"),
@@ -393,6 +459,7 @@ def main() -> int:
         choices=[
             "all",
             "device_unavailable",
+            "device_unreachable",
             "signal_fault",
             "call_latency",
             "call_failure",
@@ -415,6 +482,7 @@ def main() -> int:
 
     tests = {
         "device_unavailable": lambda c: test_device_unavailable(c, protocol),
+        "device_unreachable": lambda c: test_device_unreachable(c, protocol),
         "signal_fault": lambda c: test_signal_fault(c, protocol),
         "call_latency": lambda c: test_call_latency(c, protocol),
         "call_failure": lambda c: test_call_failure(c, protocol),

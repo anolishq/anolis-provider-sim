@@ -18,6 +18,7 @@ namespace fault_injection {
 
 struct State {
     std::map<std::string, DeviceUnavailableFault> device_unavailable_faults;
+    std::map<std::string, DeviceUnavailableFault> device_unreachable_faults;
     std::map<std::string, std::vector<SignalFault>> signal_faults;  // device_id -> signal faults
     std::map<std::string, CallLatencyFault> call_latency_faults;
     std::map<std::string, std::vector<CallFailureFault>> call_failure_faults;  // device_id -> function faults
@@ -39,6 +40,7 @@ void clear_all_faults() {
     State &s = state();
     std::lock_guard<std::mutex> lock(s.mutex);
     s.device_unavailable_faults.clear();
+    s.device_unreachable_faults.clear();
     s.signal_faults.clear();
     s.call_latency_faults.clear();
     s.call_failure_faults.clear();
@@ -65,6 +67,31 @@ bool is_device_unavailable(const std::string &device_id) {
     auto now = std::chrono::steady_clock::now();
     if (now >= it->second.expires_at) {
         s.device_unavailable_faults.erase(it);
+        return false;
+    }
+
+    return true;
+}
+
+void inject_device_unreachable(const std::string &device_id, int64_t duration_ms) {
+    State &s = state();
+    std::lock_guard<std::mutex> lock(s.mutex);
+    DeviceUnavailableFault fault;
+    fault.expires_at = std::chrono::steady_clock::now() + std::chrono::milliseconds(duration_ms);
+    s.device_unreachable_faults[device_id] = fault;
+}
+
+bool is_device_unreachable(const std::string &device_id) {
+    State &s = state();
+    std::lock_guard<std::mutex> lock(s.mutex);
+    auto it = s.device_unreachable_faults.find(device_id);
+    if (it == s.device_unreachable_faults.end()) {
+        return false;
+    }
+
+    auto now = std::chrono::steady_clock::now();
+    if (now >= it->second.expires_at) {
+        s.device_unreachable_faults.erase(it);
         return false;
     }
 

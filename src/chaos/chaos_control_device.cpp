@@ -30,6 +30,7 @@ static constexpr uint32_t kFnInjectSignalFault = 2;
 static constexpr uint32_t kFnInjectCallLatency = 3;
 static constexpr uint32_t kFnInjectCallFailure = 4;
 static constexpr uint32_t kFnClearFaults = 5;
+static constexpr uint32_t kFnInjectDeviceUnreachable = 6;
 
 void init() { fault_injection::init(); }
 
@@ -107,6 +108,17 @@ CapabilitySet get_capabilities() {
         f.set_function_id(kFnClearFaults);
         f.set_name("clear_faults");
         f.set_description("Clear all injected faults");
+        *f.mutable_policy() = make_function_policy(FunctionPolicy::CATEGORY_ACTUATE);
+        *caps.add_functions() = f;
+    }
+    {
+        FunctionSpec f;
+        f.set_function_id(kFnInjectDeviceUnreachable);
+        f.set_name("inject_device_unreachable");
+        f.set_description("Make a device's reads and calls fail with UNAVAILABLE for specified duration");
+        *f.add_args() = make_arg_spec("device_id", ValueType::VALUE_TYPE_STRING, true, "Target device ID");
+        *f.add_args() =
+            make_arg_spec("duration_ms", ValueType::VALUE_TYPE_INT64, true, "Duration in milliseconds", "ms");
         *f.mutable_policy() = make_function_policy(FunctionPolicy::CATEGORY_ACTUATE);
         *caps.add_functions() = f;
     }
@@ -203,6 +215,24 @@ CallResult call_function(uint32_t function_id, const std::map<std::string, Value
         }
 
         fault_injection::inject_call_failure(device_id, function_id_str, failure_rate);
+        return ok();
+    }
+
+    if (function_id == kFnInjectDeviceUnreachable) {
+        std::string device_id;
+        int64_t duration_ms;
+
+        if (!get_arg_string(args, "device_id", device_id)) {
+            return bad("missing or invalid device_id");
+        }
+        if (!get_arg_int64(args, "duration_ms", duration_ms)) {
+            return bad("missing or invalid duration_ms");
+        }
+        if (duration_ms <= 0) {
+            return bad("duration_ms must be > 0");
+        }
+
+        fault_injection::inject_device_unreachable(device_id, duration_ms);
         return ok();
     }
 
