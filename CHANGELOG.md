@@ -13,6 +13,8 @@ commit messages only.
 
 ## [Unreleased]
 
+## [0.2.8] - 2026-10-18
+
 ### Added
 
 - `chaos_control` function `inject_device_unreachable` (function id 6,
@@ -22,6 +24,18 @@ commit messages only.
   `DescribeDevice` still answers. It expires on its own and `clear_faults`
   clears it. `inject_device_unavailable` is unchanged (`NOT_FOUND`).
   Part of anolishq/anolis#429.
+
+### Changed
+
+- The release's `SHA256SUMS` lists every arch tarball. Before, the
+  x86_64 job wrote it alone and v0.2.7's had no line for the arm64
+  tarball, so `install.sh` installed it with a warning instead of
+  verifying it (#125).
+
+### Docs
+
+- Windows presets need Visual Studio 2026 and CMake 4.2 (#124); the
+  vcpkg baseline is the dependency lock (#122).
 
 ## [0.2.7] - 2026-08-01
 
