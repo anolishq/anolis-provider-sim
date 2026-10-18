@@ -98,8 +98,15 @@ adpp::CapabilitySet SimProviderRuntime::capabilities(const std::string& device_i
 
 sdk::AdapterReadResult SimProviderRuntime::read(const std::string& device_id,
                                                 const std::vector<std::string>& signal_ids) {
-    // sim reads never fail (quality is carried per-value, incl. fault-injection).
+    // sim reads fail only for an injected-unreachable device, as a transport-level
+    // failure; otherwise quality is carried per-value, incl. fault-injection.
     sdk::AdapterReadResult result;
+    if (sim_devices::fault_injection::is_device_unreachable(device_id)) {
+        result.ok = false;
+        result.error_code = adpp::Status::CODE_UNAVAILABLE;
+        result.error_message = "device unreachable (injected fault)";
+        return result;
+    }
     result.ok = true;
     result.error_code = adpp::Status::CODE_OK;
     result.values = sim_devices::read_signals(device_id, signal_ids);
@@ -108,6 +115,9 @@ sdk::AdapterReadResult SimProviderRuntime::read(const std::string& device_id,
 
 sdk::AdapterCallResult SimProviderRuntime::call(const std::string& device_id, uint32_t function_id,
                                                 const sdk::ValueMap& args) {
+    if (sim_devices::fault_injection::is_device_unreachable(device_id)) {
+        return {false, adpp::Status::CODE_UNAVAILABLE, "device unreachable (injected fault)"};
+    }
     std::map<std::string, adpp::Value> arg_map;
     for (const auto& [key, value] : args) {
         arg_map.emplace(key, value);

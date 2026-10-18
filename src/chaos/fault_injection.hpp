@@ -45,6 +45,12 @@ void inject_device_unavailable(const std::string &device_id, int64_t duration_ms
 /** @brief Report whether one device is currently faulted unavailable. */
 bool is_device_unavailable(const std::string &device_id);
 
+/** @brief Make one device unreachable (transport-level failure) until the
+ * duration expires. */
+void inject_device_unreachable(const std::string &device_id, int64_t duration_ms);
+/** @brief Report whether one device is currently faulted unreachable. */
+bool is_device_unreachable(const std::string &device_id);
+
 /** @brief Make one signal report faulted state until the duration expires. */
 void inject_signal_fault(const std::string &device_id, const std::string &signal_id, int64_t duration_ms);
 /** @brief Report whether one device signal is currently faulted. */

@@ -228,6 +228,27 @@ Makes a device appear unavailable for a specified duration.
 - Rejects invalid requests where `duration_ms <= 0`
 - Automatically clears after duration expires
 
+#### `inject_device_unreachable`
+
+Makes a device fail at the transport level for a specified duration, as a
+board that has gone dark on its bus.
+
+**Parameters:**
+
+- `device_id` (string): Target device ID
+- `duration_ms` (int64): Duration in milliseconds
+
+**Behavior:**
+
+- `ReadSignals` returns `UNAVAILABLE`
+- `CallFunction` returns `UNAVAILABLE`
+- `ListDevices` still lists the device and `DescribeDevice` still answers
+- Rejects invalid requests where `duration_ms <= 0`
+- Automatically clears after duration expires
+
+Use this, not `inject_device_unavailable`, to exercise a client's handling of
+a lost device: `NOT_FOUND` is not a transport failure.
+
 #### `inject_signal_fault`
 
 Forces a signal to report `FAULT` quality for a specified duration.
@@ -286,6 +307,7 @@ Clears all active fault injections.
 **Behavior:**
 
 - Removes all device unavailability faults
+- Removes all device unreachability faults
 - Removes all signal faults
 - Removes all latency injections
 - Removes all failure rate injections
