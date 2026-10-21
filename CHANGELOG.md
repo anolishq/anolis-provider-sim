@@ -13,6 +13,15 @@ commit messages only.
 
 ## [Unreleased]
 
+### Changed
+
+- FluxGraph builds (`ENABLE_FLUXGRAPH=ON`) fetch the fluxgraph v1.0.6
+  source tarball for its proto, and the Linux FluxGraph CI lane builds
+  fluxgraph-server at v1.0.6 (was v1.0.2). fluxgraph v1.0.2's unit tests
+  call `std::find` without `<algorithm>`, which GCC 15 on ubuntu-26.04
+  rejects; v1.0.6 includes it. `proto/fluxgraph.proto` is byte-identical
+  between the two releases.
+
 ## [0.2.8] - 2026-10-18
 
 ### Added

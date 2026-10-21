@@ -348,7 +348,7 @@ jobs:
 
       - name: Build provider-sim (FluxGraph ON)
         shell: pwsh
-        # FluxGraph proto is fetched via FetchContent (v1.0.2) during CMake configure.
+        # FluxGraph proto is fetched via FetchContent (v1.0.6) during CMake configure.
         # No explicit FLUXGRAPH_DIR needed; set it to override with a local source tree.
         run: |
           cmake --preset "ci-windows-release-fluxgraph-strict"
