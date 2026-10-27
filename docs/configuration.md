@@ -149,8 +149,8 @@ updates/commands.
 
 Use these files for concrete examples in this repo:
 
-- [examples/sim_mode/physics.yaml](../examples/sim_mode/physics.yaml)
-- [config/multi-provider-extrusion.yaml](../config/multi-provider-extrusion.yaml)
+- [examples/sim_mode/physics.yaml](https://github.com/anolishq/anolis-provider-sim/blob/main/examples/sim_mode/physics.yaml)
+- [config/multi-provider-extrusion.yaml](https://github.com/anolishq/anolis-provider-sim/blob/main/config/multi-provider-extrusion.yaml)
 
 Use FluxGraph docs as the authoritative schema source:
 
