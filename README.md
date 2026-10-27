@@ -11,13 +11,13 @@ This enables comprehensive validation of the anolis runtime before integrating r
 
 ### Device Roster
 
-| Device ID       | Type                 | Signals                                                                            | Functions                                       |
-| --------------- | -------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------- |
-| `tempctl0`      | Temperature Control  | `tc1_temp`, `tc2_temp`, `relay1_state`, `relay2_state`, `control_mode`, `setpoint` | `set_mode`, `set_setpoint`, `set_relay`         |
-| `motorctl0`     | Motor Control        | `motor1_speed`, `motor2_speed`, `motor1_duty`, `motor2_duty`                       | `set_motor_duty`                                |
+| Device ID       | Type                 | Signals                                                                                                                                    | Functions                                                          |
+| --------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| `tempctl0`      | Temperature Control  | `tc1_temp`, `tc2_temp`, `relay1_state`, `relay2_state`, `control_mode`, `setpoint`                                                         | `set_mode`, `set_setpoint`, `set_relay`                            |
+| `motorctl0`     | Motor Control        | `motor1_speed`, `motor2_speed`, `motor1_duty`, `motor2_duty`                                                                               | `set_motor_duty`                                                   |
 | `relayio0`      | Relay/IO Module      | `relay_ch1_state`, `relay_ch2_state`, `relay_ch3_state`, `relay_ch4_state`, `gpio_input_1`, `gpio_input_2`, `gpio_input_3`, `gpio_input_4` | `set_relay_ch1`, `set_relay_ch2`, `set_relay_ch3`, `set_relay_ch4` |
-| `analogsensor0` | Analog Sensor Module | `voltage_ch1`, `voltage_ch2`, `voltage_ch3`, `voltage_ch4`, `sensor_quality`       | `calibrate_channel`, `inject_noise`             |
-| `chaos_control` | Fault Injection      | _(none)_                                                                           | See [Fault Injection API](#fault-injection-api) |
+| `analogsensor0` | Analog Sensor Module | `voltage_ch1`, `voltage_ch2`, `voltage_ch3`, `voltage_ch4`, `sensor_quality`                                                               | `calibrate_channel`, `inject_noise`                                |
+| `chaos_control` | Fault Injection      | _(none)_                                                                                                                                   | See [Fault Injection API](#fault-injection-api)                    |
 
 Physical basis documentation for each device is available in [docs/](docs/).
 
@@ -522,13 +522,13 @@ All devices initialize in safe, inactive states on startup, ensuring physical sa
 
 ### Device Safe Defaults
 
-| Device            | Safe State                           | Rationale                                          |
-| ----------------- | ------------------------------------ | -------------------------------------------------- |
-| **tempctl0**      | Relays OFF, Open-loop mode           | No heating actuation; monitoring only              |
-| **motorctl0**     | Duty cycle = 0 (both motors)         | No motion; PWM outputs disabled                    |
-| **relayio0**      | Both relays OPEN (de-energized)      | Fail-safe state; external equipment unaffected     |
-| **analogsensor0** | No actuation outputs                 | `calibrate_channel` and `inject_noise` change only simulated sensor state |
-| **chaos_control** | No faults injected on startup        | Clean slate for fault injection testing            |
+| Device            | Safe State                      | Rationale                                                                 |
+| ----------------- | ------------------------------- | ------------------------------------------------------------------------- |
+| **tempctl0**      | Relays OFF, Open-loop mode      | No heating actuation; monitoring only                                     |
+| **motorctl0**     | Duty cycle = 0 (both motors)    | No motion; PWM outputs disabled                                           |
+| **relayio0**      | Both relays OPEN (de-energized) | Fail-safe state; external equipment unaffected                            |
+| **analogsensor0** | No actuation outputs            | `calibrate_channel` and `inject_noise` change only simulated sensor state |
+| **chaos_control** | No faults injected on startup   | Clean slate for fault injection testing                                   |
 
 ### Implementation Details
 
