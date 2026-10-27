@@ -29,16 +29,24 @@ Thread-safe cache implementing `ISignalSource`. Coordinates between physics tick
 - `device_reader_` - Callback to read actual device state (for actuators)
 - `registry_mutex_` - Protects all operations
 
-### SimPhysics
+### Ticker and SimulationEngine
 
-Physics engine depends only on `ISignalSource*`. Zero knowledge of ADPP protocol.
+The ticker thread in `src/devices/common/device_manager.cpp` drives a
+`sim_engine::SimulationEngine` backend: `LocalEngine` (`mode=non_interacting`)
+or `RemoteEngine` with `FluxGraphAdapter` (`mode=sim`). In `mode=inert`,
+`NullEngine` is installed but no ticker thread starts. Engines take and return maps of signal path to
+value; the ticker, not the engine, talks to the `SignalRegistry`. The
+`SimulationEngine` interface, `RemoteEngine` and the FluxGraph adapter carry no
+ADPP types. `LocalEngine` includes device headers that pull in the ADPP
+protobuf (`protocol.pb.h`).
 
-**Signal flow:**
+**Signal flow (each tick):**
 
-1. Read actuator states via `signal_source_->read_signal()`
-2. Evaluate signal graph (transforms, routing)
-3. Update physics models
-4. Write sensor values via `signal_source_->write_signal()`
+1. Run device-local control loops (`update_control`)
+2. Collect actuator values via `g_signal_registry->read_signal()` for actuator paths that are not physics-driven; in `mode=sim`, also add the constant ambient input when `simulation.ambient_temp_c` is set (path `simulation.ambient_signal_path`, default `environment/ambient_temp`)
+3. Call `SimulationEngine::tick()`: in `mode=sim` the external FluxGraph server evaluates the signal graph (transforms, routing) and updates its models; `LocalEngine` calls each device's `update_physics`. provider-sim evaluates no graph itself.
+4. Write the returned sensor values via `g_signal_registry->write_signal()`
+5. Execute any commands the engine returned
 
 ### Device Integration
 
@@ -58,11 +66,14 @@ return internal_state[signal_id];
 
 **Lock policy:**
 
-- Physics ticker: Acquire registry mutex → read actuators → compute → write sensors → release
+- Ticker: each registry call (`is_physics_driven`, `read_signal`, `write_signal`) acquires and releases the registry mutex itself; the mutex is not held across a tick
 - Device handlers: Acquire registry mutex → read values → release
 - No lock held during physics model evaluation (only during registry I/O)
 
-**Deadlock prevention:** No nested lock acquisition. Physics and device mutexes are separate.
+**Deadlock prevention:** Locks can nest: analogsensor `read_signals()` takes the
+registry mutex while holding its device `g_state_mutex`. The order is always
+device state mutex, then registry mutex, and `read_signal()` releases
+`registry_mutex_` before it calls `device_reader_`.
 
 ## Signal Routing
 
@@ -73,11 +84,11 @@ In `mode=sim`, routing is declarative in the FluxGraph graph file referenced by
 edges:
   - source: device_a/actuator # Read from device
     target: model_b/input # Write to model
-    transform: { type: linear, scale: 100.0 }
+    transform: { type: linear, params: { scale: 100.0, offset: 0.0 } }
 
   - source: model_b/output # Read from model
     target: device_c/sensor # Write to device (registry cache)
-    transform: { type: first_order_lag, tau_s: 2.0 }
+    transform: { type: first_order_lag, params: { tau_s: 2.0 } }
 ```
 
 FluxGraph processes this schema; provider-sim does not define or validate it.
@@ -97,11 +108,10 @@ implementations.
 
 ## Benefits
 
-- **Protocol independence** - Physics has zero ADPP dependencies
-- **Reusability** - Same physics engine works with any protocol via `ISignalSource`
-- **Declarative config** - Full signal flow visible in YAML
-- **Testability** - Mock `ISignalSource` for unit tests
-- **Debuggability** - Registry can log all signal transactions
+- **Protocol independence** - The `SimulationEngine` interface and the FluxGraph remote path have no ADPP dependencies; `LocalEngine` depends on device headers that include the ADPP protobuf
+- **Reusability** - Backends are pluggable through the `SimulationEngine` and `ProtocolAdapter` interfaces
+- **Declarative config** - The graph YAML declares the FluxGraph routing; device-local control loops and the set of actuator signals are defined in C++
+- **Testability** - The engine boundary is `SimulationEngine`; `NullEngine` is an inert implementation
 
 ## Design Trade-offs
 

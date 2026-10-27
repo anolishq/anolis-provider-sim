@@ -4,8 +4,8 @@ Build and validate `anolis-provider-sim` on Linux using repository presets.
 
 ## Prerequisites
 
-- Ubuntu 22.04+ / Debian 12+ (or equivalent modern distro)
-- GCC/Clang with C++17 support
+- Ubuntu 24.04+ / Debian 13+ (or another distro with GCC 13+ and Python 3.12+)
+- GCC 13+ or Clang with C++20 support, including the `<format>` header
 - CMake >= 3.20
 - Ninja
 - Python 3.12+
@@ -17,7 +17,7 @@ Ubuntu/Debian:
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y build-essential cmake ninja-build git curl zip unzip tar python3 python3-pip
+sudo apt-get install -y build-essential cmake ninja-build git curl zip unzip tar python3 python3-pip python3-venv
 ```
 
 ## 2) Install and configure vcpkg
@@ -45,8 +45,14 @@ echo "$VCPKG_ROOT"
 ```bash
 git clone https://github.com/anolishq/anolis-provider-sim.git
 cd anolis-provider-sim
-git submodule update --init --recursive
+python3 -m venv .venv
+. .venv/bin/activate
+pip install -r requirements-lock.txt
 ```
+
+The tests in step 6 import `protocol_pb2` from the `anolis-protocol` package in
+`requirements-lock.txt`. Keep the virtual environment active when you configure
+and when you run `ctest`.
 
 ## 4) Configure and build
 

@@ -7,7 +7,7 @@
 **Core Components:**
 
 - Microcontroller with PWM generation
-- Dual H-bridge motor drivers for bidirectional control (two DC motors)
+- Dual motor drivers for one-direction speed control (two DC motors; duty 0..1, no reverse)
 - Current sensing for speed estimation
 - Communication interface for device protocol
 - No position feedback or persistent storage

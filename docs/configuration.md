@@ -142,8 +142,9 @@ simulation:
 
 `physics_config` points to a FluxGraph graph file (for example `config/multi-provider-extrusion.yaml` or `examples/sim_mode/physics.yaml`).
 
-Provider-sim does not define or validate the FluxGraph graph schema. It only
-passes the file path/content through to FluxGraph and consumes resulting signal
+Provider-sim does not define or validate the FluxGraph graph schema. It sends
+the file content to FluxGraph, parses the file itself to collect `edges[].target`
+values as the output signal paths it reads back, and consumes resulting signal
 updates/commands.
 
 Use these files for concrete examples in this repo:
