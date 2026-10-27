@@ -6,11 +6,11 @@
 
 **Core Components:**
 
-- Microcontroller with PID control loop execution
+- Microcontroller running a staged on/off control loop with a +/-2 C dead band on `tc1_temp`
 - Thermocouple acquisition (2 channels) - digitized temperature sensors
-- Relay output drivers (2 channels) - switches for heater/cooler control
+- Relay output drivers (2 channels) - two heating stages (no cooling output)
 - Communication interface for device protocol
-- Non-volatile storage for setpoint/configuration
+- Setpoint and mode held in memory only; each init resets them to open mode and 60 C
 
 ## Operational Pattern
 
@@ -24,7 +24,7 @@
 **Typical Control Flow:**
 
 1. Host polls temperature signals periodically
-2. Manual mode: Host calls relay functions to control heating/cooling
+2. Manual mode: Host calls relay functions to control heating
 3. Automatic mode: Host sets mode and setpoint, controller handles relay actuation
 4. Controller maintains setpoint autonomously until mode change or new setpoint
 

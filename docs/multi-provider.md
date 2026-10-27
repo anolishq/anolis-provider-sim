@@ -68,5 +68,5 @@ ctest --preset dev-windows-release-fluxgraph -L fluxgraph
 ## Environment Overrides (optional)
 
 - `ANOLIS_PROVIDER_SIM_EXE`
-- `ANOLIS_PROVIDER_SIM_BUILD_DIR`
 - `FLUXGRAPH_SERVER_EXE`
+- `FLUXGRAPH_DIR` (FluxGraph repo root used to find the server; defaults to `../fluxgraph`)

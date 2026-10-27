@@ -11,13 +11,13 @@ This enables comprehensive validation of the anolis runtime before integrating r
 
 ### Device Roster
 
-| Device ID       | Type                 | Signals                                                                            | Functions                                       |
-| --------------- | -------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------- |
-| `tempctl0`      | Temperature Control  | `tc1_temp`, `tc2_temp`, `relay1_state`, `relay2_state`, `control_mode`, `setpoint` | `set_mode`, `set_setpoint`, `set_relay`         |
-| `motorctl0`     | Motor Control        | `motor1_speed`, `motor2_speed`, `motor1_duty`, `motor2_duty`                       | `set_motor_duty`                                |
-| `relayio0`      | Relay/IO Module      | `relay_ch1_state`, `relay_ch2_state`, `gpio_input_1`, `gpio_input_2`               | `set_relay_ch1`, `set_relay_ch2`                |
-| `analogsensor0` | Analog Sensor Module | `voltage_ch1`, `voltage_ch2`, `sensor_quality`                                     | `calibrate_channel`, `inject_noise`             |
-| `chaos_control` | Fault Injection      | _(none)_                                                                           | See [Fault Injection API](#fault-injection-api) |
+| Device ID       | Type                 | Signals                                                                                                                                    | Functions                                                          |
+| --------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| `tempctl0`      | Temperature Control  | `tc1_temp`, `tc2_temp`, `relay1_state`, `relay2_state`, `control_mode`, `setpoint`                                                         | `set_mode`, `set_setpoint`, `set_relay`                            |
+| `motorctl0`     | Motor Control        | `motor1_speed`, `motor2_speed`, `motor1_duty`, `motor2_duty`                                                                               | `set_motor_duty`                                                   |
+| `relayio0`      | Relay/IO Module      | `relay_ch1_state`, `relay_ch2_state`, `relay_ch3_state`, `relay_ch4_state`, `gpio_input_1`, `gpio_input_2`, `gpio_input_3`, `gpio_input_4` | `set_relay_ch1`, `set_relay_ch2`, `set_relay_ch3`, `set_relay_ch4` |
+| `analogsensor0` | Analog Sensor Module | `voltage_ch1`, `voltage_ch2`, `voltage_ch3`, `voltage_ch4`, `sensor_quality`                                                               | `calibrate_channel`, `inject_noise`                                |
+| `chaos_control` | Fault Injection      | _(none)_                                                                                                                                   | See [Fault Injection API](#fault-injection-api)                    |
 
 Physical basis documentation for each device is available in [docs/](docs/).
 
@@ -69,7 +69,7 @@ providers:
 
 ### Build from source (contributors)
 
-Install host prerequisites: CMake ≥ 3.20 (≥ 4.2 and Visual Studio 2026 for the Windows presets), Ninja, vcpkg, a C++17 compiler, Python 3.12.
+Install host prerequisites: CMake ≥ 3.20 (≥ 4.2 and Visual Studio 2026 for the Windows presets), Ninja, vcpkg, a C++20 compiler, Python 3.12.
 
 ```bash
 git clone https://github.com/anolishq/anolis-provider-sim.git
@@ -77,7 +77,7 @@ cd anolis-provider-sim
 cmake --preset dev-release
 cmake --build --preset dev-release --parallel
 ctest --preset dev-release -L provider
-./build/dev-release/anolis-provider-sim --help
+./build/dev-release/anolis-provider-sim --version
 ```
 
 Windows (PowerShell):
@@ -99,13 +99,13 @@ Provider-sim includes a configurable physics engine for realistic multi-device s
 
 ### Simulation Modes
 
-- **`inert`** - No simulation engine, devices return static/default values
+- **`inert`** - Null simulation engine, no physics ticker; values change only through function calls (analogsensor voltage reads still add Gaussian noise, sigma 0.01 V)
 - **`non_interacting`** - Local physics engine with first-order device models
 - **`sim`** - External simulation via FluxGraph adapter (requires `ENABLE_FLUXGRAPH=ON`)
 
 ### Key Features
 
-- **8 transform primitives** - FirstOrderLag, Noise, Saturation, Linear, Deadband, RateLimiter, Delay, MovingAverage
+- **9 transform primitives** - FirstOrderLag, Noise, Saturation, Linear, Deadband, RateLimiter, Delay, MovingAverage, UnitConvert
 - **ThermalMassModel** - First-principles thermal physics (lumped capacitance)
 - **Rule engine** - Automated actions based on signal conditions
 - **Declarative routing** - Full device→model→device signal flow in YAML config
@@ -128,7 +128,7 @@ Provider-sim includes a configurable physics engine for realistic multi-device s
 
 Provider-sim is organized into explicit layers:
 
-- **`src/core/`**: ADPP protocol handling and transport
+- **`src/core/`**: process entrypoint and the `SimProviderRuntime` adapter; ADPP handling and the framed stdio transport come from the anolis-provider-sdk `run_loop`
 - **`src/devices/`**: device modules and shared device infrastructure
 - **`src/simulation/`**: simulation engine + external sim adapters
 - **`src/chaos/`**: runtime fault injection and control device
@@ -178,13 +178,13 @@ Provider-sim supports device configuration via YAML files. This allows operators
 
 Provider-sim includes several example configurations:
 
-- **`config/provider-sim.yaml`** - Default configuration matching hardcoded devices
+- **`config/provider-sim.yaml`** - Default configuration defining `tempctl0`, `motorctl0`, `relayio0` and `analogsensor0`
 - **`config/multi-tempctl.yaml`** - Multiple temperature controllers (demonstrates same-type devices)
 - **`config/minimal.yaml`** - Single device for lightweight testing
 
 ### Configuration Schema
 
-See [docs/configuration.md](docs/configuration.md) for complete schema documentation and hardware provider guidance.
+See [docs/configuration.md](docs/configuration.md) for complete schema documentation. Hardware provider guidance is in [For Hardware Provider Authors](#for-hardware-provider-authors).
 
 ### Quick Example
 
@@ -262,7 +262,7 @@ Forces a signal to report `FAULT` quality for a specified duration.
 **Behavior:**
 
 - Signal quality becomes `FAULT`
-- Signal value freezes at current value
+- Signal value is still read live; only the quality changes
 - Rejects invalid requests where `duration_ms <= 0`
 - Automatically clears after duration expires
 
@@ -321,18 +321,38 @@ BASE_URL = "http://localhost:8080"
 
 # Inject device unavailable for 5 seconds
 requests.post(
-    f"{BASE_URL}/v0/call/sim0/chaos_control/inject_device_unavailable",
-    json={"args": {"device_id": "tempctl0", "duration_ms": 5000}},
+    f"{BASE_URL}/v0/call",
+    json={
+        "provider_id": "sim0",
+        "device_id": "chaos_control",
+        "function_id": 1,  # inject_device_unavailable
+        "args": {
+            "device_id": {"type": "string", "string": "tempctl0"},
+            "duration_ms": {"type": "int64", "int64": 5000},
+        },
+    },
 )
 
 # Inject 50% failure rate on set_setpoint (function_id=2)
 requests.post(
-    f"{BASE_URL}/v0/call/sim0/chaos_control/inject_call_failure",
-    json={"args": {"device_id": "tempctl0", "function_id": "2", "failure_rate": 0.5}},
+    f"{BASE_URL}/v0/call",
+    json={
+        "provider_id": "sim0",
+        "device_id": "chaos_control",
+        "function_id": 4,  # inject_call_failure
+        "args": {
+            "device_id": {"type": "string", "string": "tempctl0"},
+            "function_id": {"type": "string", "string": "2"},
+            "failure_rate": {"type": "double", "double": 0.5},
+        },
+    },
 )
 
 # Clear all faults
-requests.post(f"{BASE_URL}/v0/call/sim0/chaos_control/clear_faults", json={"args": {}})
+requests.post(
+    f"{BASE_URL}/v0/call",
+    json={"provider_id": "sim0", "device_id": "chaos_control", "function_id": 5, "args": {}},  # clear_faults
+)
 ```
 
 ## Examples
@@ -346,7 +366,7 @@ Comprehensive working examples for each simulation mode are available in the [`e
 Each example includes:
 
 - Complete YAML configurations
-- Python test scripts with expected output
+- Python test scripts
 - README with usage instructions
 
 See [examples/README.md](examples/README.md) for the full index and quick start guide.
@@ -502,13 +522,13 @@ All devices initialize in safe, inactive states on startup, ensuring physical sa
 
 ### Device Safe Defaults
 
-| Device            | Safe State                           | Rationale                                          |
-| ----------------- | ------------------------------------ | -------------------------------------------------- |
-| **tempctl0**      | Relays OFF, Open-loop mode           | No heating actuation; monitoring only              |
-| **motorctl0**     | Duty cycle = 0 (both motors)         | No motion; PWM outputs disabled                    |
-| **relayio0**      | Both relays OPEN (de-energized)      | Fail-safe state; external equipment unaffected     |
-| **analogsensor0** | No output control (read-only device) | Sensor readings available; no actuation capability |
-| **chaos_control** | No faults injected on startup        | Clean slate for fault injection testing            |
+| Device            | Safe State                      | Rationale                                                                 |
+| ----------------- | ------------------------------- | ------------------------------------------------------------------------- |
+| **tempctl0**      | Relays OFF, Open-loop mode      | No heating actuation; monitoring only                                     |
+| **motorctl0**     | Duty cycle = 0 (both motors)    | No motion; PWM outputs disabled                                           |
+| **relayio0**      | Both relays OPEN (de-energized) | Fail-safe state; external equipment unaffected                            |
+| **analogsensor0** | No actuation outputs            | `calibrate_channel` and `inject_noise` change only simulated sensor state |
+| **chaos_control** | No faults injected on startup   | Clean slate for fault injection testing                                   |
 
 ### Implementation Details
 
@@ -535,6 +555,7 @@ struct State {
     double duty2 = 0.0;  // ✅ Safe: No PWM output
     double speed1 = 0.0; // Stationary
     double speed2 = 0.0;
+    double max_rpm = 3200.0;  // Set from max_speed config
 };
 ```
 
@@ -544,8 +565,12 @@ struct State {
 struct State {
     bool relay_ch1 = false;  // ✅ Safe: Open/de-energized
     bool relay_ch2 = false;  // ✅ Safe: Open/de-energized
+    bool relay_ch3 = false;  // ✅ Safe: Open/de-energized
+    bool relay_ch4 = false;  // ✅ Safe: Open/de-energized
     bool gpio_input_1 = false;
     bool gpio_input_2 = false;
+    bool gpio_input_3 = false;
+    bool gpio_input_4 = false;
 };
 ```
 
@@ -565,10 +590,11 @@ Validate safe defaults:
 
 ```bash
 # Start provider-sim
-./build/anolis-provider-sim --config config/provider-sim.yaml
+./build/dev-release/anolis-provider-sim --config config/provider-sim.yaml
 
 # In separate terminal, use anolis runtime
-# - Runtime starts in IDLE mode (control operations blocked)
+# - With automation.enabled, runtime starts in IDLE mode (control operations blocked);
+#   without automation there is no mode gate
 # - Devices discovered with capabilities advertised
 # - Query device signals to verify safe states:
 curl http://localhost:8080/v0/state/sim0/tempctl0

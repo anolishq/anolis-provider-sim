@@ -16,13 +16,15 @@ This demo uses one provider instance (`tempctl0`) with external FluxGraph simula
 
 ## Run
 
-Linux/macOS:
+Linux:
 
 ```bash
 cmake --preset ci-linux-release-fluxgraph -DFLUXGRAPH_DIR=../fluxgraph
 cmake --build --preset ci-linux-release-fluxgraph --parallel
 ctest --preset ci-linux-release-fluxgraph -L fluxgraph
 ```
+
+The `ci-linux-release-fluxgraph` presets pin the `x64-linux-static` vcpkg triplet. On macOS, run the same three commands with the `dev-release-fluxgraph` presets instead; no CI job runs on macOS.
 
 Windows:
 

@@ -44,12 +44,14 @@ python .\examples\inert_mode\test_inert.py
 python .\examples\non_interacting_mode\test_non_interacting.py
 ```
 
-If generated Python protobuf bindings are in a preset-specific build directory,
-set `ANOLIS_PROVIDER_SIM_BUILD_DIR` before running examples.
+The Python protobuf bindings (`protocol_pb2`) come from the `anolis-protocol`
+package. Install it with `pip install -r requirements.txt` before running examples.
+The scripts look for the provider executable in the preset build directories;
+set `ANOLIS_PROVIDER_SIM_EXE` to use a different one.
 Example (Windows):
 
 ```powershell
-$env:ANOLIS_PROVIDER_SIM_BUILD_DIR="build/dev-windows-release"
+$env:ANOLIS_PROVIDER_SIM_EXE="build/dev-windows-release/Release/anolis-provider-sim.exe"
 ```
 
 `sim_mode` also requires FluxGraph server availability.
@@ -69,7 +71,6 @@ Windows:
 ```powershell
 cmake --preset dev-windows-release-fluxgraph -DFLUXGRAPH_DIR=..\fluxgraph
 cmake --build --preset dev-windows-release-fluxgraph --parallel
-$env:ANOLIS_PROVIDER_SIM_BUILD_DIR="build/dev-windows-release-fluxgraph"
 python .\examples\sim_mode\test_sim.py
 ```
 

@@ -29,7 +29,6 @@ echo $env:VCPKG_ROOT
 ```powershell
 git clone https://github.com/anolishq/anolis-provider-sim.git
 cd anolis-provider-sim
-git submodule update --init --recursive
 ```
 
 ## 3) Configure and build
