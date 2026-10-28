@@ -2,47 +2,50 @@
 
 [![CI](https://github.com/anolishq/anolis-provider-sim/actions/workflows/ci.yml/badge.svg)](https://github.com/anolishq/anolis-provider-sim/actions/workflows/ci.yml)
 
-Simulation device provider for anolis runtime, implementing the Anolis Device Provider Protocol (ADPP) v1.
+`anolis-provider-sim` is an ADPP v1 provider that serves simulated devices, so
+the Anolis runtime can be run and tested without hardware. The runtime starts it
+as a subprocess and talks to it over stdio with `uint32_le` length-prefixed
+frames.
 
-## Overview
+## Devices
 
-Provider-sim provides a **dry-run machine** with 5 simulated devices covering a variety of signal types and control patterns.
-This enables comprehensive validation of the anolis runtime before integrating real hardware.
+A config file declares which devices exist. Each device has an `id` and a
+`type`:
 
-### Device Roster
+| Type           | Example ID      | Signals                                                                                        | Functions                                                          |
+| -------------- | --------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `tempctl`      | `tempctl0`      | `tc1_temp`, `tc2_temp`, `relay1_state`, `relay2_state`, `control_mode`, `setpoint`             | `set_mode`, `set_setpoint`, `set_relay`                            |
+| `motorctl`     | `motorctl0`     | `motor1_speed`, `motor2_speed`, `motor1_duty`, `motor2_duty`                                   | `set_motor_duty`                                                   |
+| `relayio`      | `relayio0`      | `relay_ch1_state` to `relay_ch4_state`, `gpio_input_1` to `gpio_input_4`                       | `set_relay_ch1` to `set_relay_ch4`                                 |
+| `analogsensor` | `analogsensor0` | `voltage_ch1` to `voltage_ch4`, `sensor_quality`                                               | `calibrate_channel`, `inject_noise`                                |
 
-| Device ID       | Type                 | Signals                                                                                                                                    | Functions                                                          |
-| --------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
-| `tempctl0`      | Temperature Control  | `tc1_temp`, `tc2_temp`, `relay1_state`, `relay2_state`, `control_mode`, `setpoint`                                                         | `set_mode`, `set_setpoint`, `set_relay`                            |
-| `motorctl0`     | Motor Control        | `motor1_speed`, `motor2_speed`, `motor1_duty`, `motor2_duty`                                                                               | `set_motor_duty`                                                   |
-| `relayio0`      | Relay/IO Module      | `relay_ch1_state`, `relay_ch2_state`, `relay_ch3_state`, `relay_ch4_state`, `gpio_input_1`, `gpio_input_2`, `gpio_input_3`, `gpio_input_4` | `set_relay_ch1`, `set_relay_ch2`, `set_relay_ch3`, `set_relay_ch4` |
-| `analogsensor0` | Analog Sensor Module | `voltage_ch1`, `voltage_ch2`, `voltage_ch3`, `voltage_ch4`, `sensor_quality`                                                               | `calibrate_channel`, `inject_noise`                                |
-| `chaos_control` | Fault Injection      | _(none)_                                                                                                                                   | See [Fault Injection API](#fault-injection-api)                    |
+The provider also always serves a `chaos_control` device for
+[fault injection](#fault-injection). A configured device cannot use that ID.
 
-Physical basis documentation for each device is available in [docs/](docs/).
+Each device type has a page in [docs/devices/](docs/devices/) describing the
+physical card it models.
 
-Build/dependency/CI governance: [docs/dependencies.md](docs/dependencies.md).
+## Download
 
-Local API docs: run `doxygen docs/Doxyfile` from the repo root.
-Generated output goes to `build/docs/doxygen/html/` and remains untracked.
-
-## Quick Start
-
-### Download and run (recommended)
-
-Download the latest release binary (Linux x86_64):
+Release builds are published for Linux x86_64 and arm64. This fetches the
+latest one:
 
 ```bash
+ARCH=x86_64   # or arm64
 VERSION=$(curl -fsSL https://api.github.com/repos/anolishq/anolis-provider-sim/releases/latest | grep '"tag_name"' | sed 's/.*"v\([^"]*\)".*/\1/')
-curl -fsSL "https://github.com/anolishq/anolis-provider-sim/releases/download/v${VERSION}/anolis-provider-sim-${VERSION}-linux-x86_64.tar.gz" \
-  | tar -xz
-# binary is at ./bin/anolis-provider-sim
+curl -fsSLO "https://github.com/anolishq/anolis-provider-sim/releases/download/v${VERSION}/anolis-provider-sim-${VERSION}-linux-${ARCH}.tar.gz"
+curl -fsSL -o sim.SHA256SUMS "https://github.com/anolishq/anolis-provider-sim/releases/download/v${VERSION}/SHA256SUMS"
+sha256sum -c --ignore-missing sim.SHA256SUMS
+tar -xzf "anolis-provider-sim-${VERSION}-linux-${ARCH}.tar.gz"
 ```
 
-Write a minimal config (or use the checked-in `config/provider-sim.yaml` from the source):
+The binary is at `./bin/anolis-provider-sim`.
+
+## Use it with the runtime
+
+Write a provider config, for example `provider-sim.yaml`:
 
 ```yaml
-# provider-sim.yaml
 devices:
   - id: tempctl0
     type: tempctl
@@ -50,33 +53,149 @@ devices:
   - id: motorctl0
     type: motorctl
     max_speed: 3000.0
+
 simulation:
   mode: non_interacting
   tick_rate_hz: 10.0
 ```
 
-Provider-sim is started by the Anolis runtime as a subprocess — it is not run directly.
-Pair it with [`anolis`](https://github.com/anolishq/anolis/releases/latest):
+Then point the runtime's `providers` section at it:
 
 ```yaml
-# in your anolis-runtime.yaml providers section:
 providers:
   - id: sim0
     command: ./bin/anolis-provider-sim
-    args: ["--config", "./provider-sim.yaml"]
-    timeout_ms: 5000
+    args: ["--config", "provider-sim.yaml"]
 ```
 
-### Build from source (contributors)
+[Try Anolis with the simulator](https://github.com/anolishq/anolis/blob/main/docs/quickstart-simulator.md)
+walks through downloading both, running them, and reading and controlling a
+device over the HTTP API.
 
-Install host prerequisites: CMake ≥ 3.20 (≥ 4.2 and Visual Studio 2026 for the Windows presets), Ninja, vcpkg, a C++20 compiler, Python 3.12.
+## Command-line flags
+
+| Flag                       | Effect                                                                                     |
+| -------------------------- | ------------------------------------------------------------------------------------------ |
+| `--config <path>`          | Load the config and serve ADPP on stdio. Required unless one of the next three is given.   |
+| `--check-config <path>`    | Load the config and initialize the devices, log the result to stderr, and exit 0 if valid. |
+| `--config-schema`          | Print the config schema envelope to stdout and exit, without reading a config.             |
+| `--version`                | Print the version and exit.                                                                |
+| `--sim-server <host:port>` | FluxGraph server address. Required for `mode: sim`; ignored with a warning in other modes. |
+| `--crash-after <seconds>`  | Exit with code 42 after this many seconds, to simulate a provider crash.                   |
+
+An unknown or malformed argument, or a missing `--config`, exits 1.
+
+## Configuration
+
+[docs/configuration.md](docs/configuration.md) is the full reference for the
+config file. The parts most people need:
+
+- `simulation.mode` is required and picks the engine:
+  - `inert`: no physics ticker. Values change only through function calls,
+    although analog sensor reads still carry simulated noise.
+  - `non_interacting`: built-in first-order device models, ticked at
+    `tick_rate_hz`.
+  - `sim`: an external FluxGraph simulation. Needs a FluxGraph build,
+    `--sim-server`, `tick_rate_hz`, and `physics_config` (a path relative to
+    the config file).
+- `startup_policy` is `strict` (default: stop on the first device that fails to
+  initialize) or `degraded` (continue with the devices that did).
+
+Example configs in [config/](config/):
+
+- `provider-sim.yaml`: `tempctl0`, `motorctl0`, `relayio0` and `analogsensor0`.
+- `multi-tempctl.yaml`: several devices of the same type.
+- `minimal.yaml`: one device in `inert` mode.
+- `provider-chamber.yaml`, `provider-extruder.yaml` and
+  `multi-provider-extrusion.yaml`: the FluxGraph demos, described in
+  [docs/demos/demo-chamber.md](docs/demos/demo-chamber.md) and
+  [docs/demos/demo-reactor.md](docs/demos/demo-reactor.md).
+
+[examples/](examples/README.md) has a runnable config and Python script for
+each simulation mode. [docs/architecture-signal-registry.md](docs/architecture-signal-registry.md)
+explains how the physics engine and the devices share signal values.
+
+## Fault injection
+
+Call functions on the `chaos_control` device to inject failures.
+
+| ID | Function                    | Arguments                                         | Effect                                                                                                                                                                                 |
+| -- | --------------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1  | `inject_device_unavailable` | `device_id`, `duration_ms`                        | The device is left out of `ListDevices`; `DescribeDevice` and `ReadSignals` return `NOT_FOUND`; `CallFunction` returns `INVALID_ARGUMENT`.                                             |
+| 2  | `inject_signal_fault`       | `device_id`, `signal_id`, `duration_ms`           | The signal reports `FAULT` quality. Its value is still read live.                                                                                                                      |
+| 3  | `inject_call_latency`       | `device_id`, `latency_ms`                         | Every `CallFunction` on the device is delayed by `latency_ms`.                                                                                                                         |
+| 4  | `inject_call_failure`       | `device_id`, `function_id`, `failure_rate`        | Calls to that function return `INVALID_ARGUMENT` with probability `failure_rate`.                                                                                                      |
+| 5  | `clear_faults`              | none                                              | Removes every active fault.                                                                                                                                                            |
+| 6  | `inject_device_unreachable` | `device_id`, `duration_ms`                        | `ReadSignals` and `CallFunction` return `UNAVAILABLE`, like a board gone dark on its bus. The device stays listed and `DescribeDevice` still answers.                                  |
+
+Argument rules:
+
+- `device_id`, `signal_id` and `function_id` are strings. `function_id` is the
+  target function's numeric ID as a string, for example `"2"`, and must be 1 or
+  more.
+- `duration_ms` is an `int64` above 0, and `latency_ms` an `int64` of 0 or
+  more.
+- `failure_rate` is a `double` from 0.0 to 1.0.
+
+Faults with a `duration_ms` clear themselves when it expires. Latency and call
+failure faults last until `clear_faults`.
+
+To test a client's handling of a lost device, use `inject_device_unreachable`,
+not `inject_device_unavailable`: `NOT_FOUND` is not a transport failure.
+
+Through the runtime's HTTP API, this makes `tempctl0`'s `set_setpoint`
+(function 2) fail half the time:
+
+```bash
+curl -s -X POST http://127.0.0.1:8080/v0/call \
+  -H 'Content-Type: application/json' \
+  -d '{"provider_id": "sim0", "device_id": "chaos_control", "function_id": 4,
+       "args": {"device_id": {"type": "string", "string": "tempctl0"},
+                "function_id": {"type": "string", "string": "2"},
+                "failure_rate": {"type": "double", "double": 0.5}}}'
+```
+
+## Safe initial state
+
+Every device starts inactive, as the
+[provider safe initialization contract](https://github.com/anolishq/anolis/blob/main/docs/providers.md#safe-initialization-contract)
+requires:
+
+- `tempctl`: both relays off, `control_mode` `open`.
+- `motorctl`: both duties and speeds 0.
+- `relayio`: all four relays off.
+- `analogsensor`: has no outputs; its functions change only simulated sensor
+  state.
+- `chaos_control`: no faults active.
+
+## Logging
+
+Diagnostics go to stderr as:
+
+```text
+[YYYY-MM-DD HH:MM:SS.mmm] [LEVEL] [Component] message
+```
+
+Set the level with `ANOLIS_PROVIDER_SIM_LOG_LEVEL`: `debug`, `info` (default),
+`warn`, `error` or `none`, in any case. An invalid value logs one warning and
+uses `info`.
+
+stdout carries only ADPP frames. Never write diagnostics to it.
+
+## Build from source
+
+You need CMake 3.20 or later, Ninja, vcpkg (with `VCPKG_ROOT` set), a C++20
+compiler and Python 3.12. The Windows presets also need Visual Studio 2026 and
+CMake 4.2 or later. Full setup is in [docs/setup-linux.md](docs/setup-linux.md)
+and [docs/setup-win.md](docs/setup-win.md).
+
+Linux:
 
 ```bash
 git clone https://github.com/anolishq/anolis-provider-sim.git
 cd anolis-provider-sim
 cmake --preset dev-release
 cmake --build --preset dev-release --parallel
-ctest --preset dev-release -L provider
 ./build/dev-release/anolis-provider-sim --version
 ```
 
@@ -87,561 +206,40 @@ git clone https://github.com/anolishq/anolis-provider-sim.git
 Set-Location anolis-provider-sim
 cmake --preset dev-windows-release
 cmake --build --preset dev-windows-release --parallel
-ctest --preset dev-windows-release
+.\build\dev-windows-release\Release\anolis-provider-sim.exe --version
 ```
 
-Build/dependency/CI governance: [docs/dependencies.md](docs/dependencies.md).
+`cmake --list-presets` lists the configure presets; `cmake --list-presets=all`
+also lists the build and test presets.
 
-## Physics Simulation
+### FluxGraph
 
-Provider-sim includes a configurable physics engine for realistic multi-device scenarios using the
-**Signal Registry pattern** for clean separation between simulation and protocol layers.
-
-### Simulation Modes
-
-- **`inert`** - Null simulation engine, no physics ticker; values change only through function calls (analogsensor voltage reads still add Gaussian noise, sigma 0.01 V)
-- **`non_interacting`** - Local physics engine with first-order device models
-- **`sim`** - External simulation via FluxGraph adapter (requires `ENABLE_FLUXGRAPH=ON`)
-
-### Key Features
-
-- **9 transform primitives** - FirstOrderLag, Noise, Saturation, Linear, Deadband, RateLimiter, Delay, MovingAverage, UnitConvert
-- **ThermalMassModel** - First-principles thermal physics (lumped capacitance)
-- **Rule engine** - Automated actions based on signal conditions
-- **Declarative routing** - Full device→model→device signal flow in YAML config
-
-### Demo Scenarios
-
-**Chamber FluxGraph Integration** (`config/provider-chamber.yaml` + `config/multi-provider-extrusion.yaml`):
-
-- Single-provider chamber simulation against FluxGraph
-- Demonstrates external simulation wiring, ambient injection, and wait-ready flow
-- See [docs/demo-chamber.md](docs/demos/demo-chamber.md)
-
-**Multi-Provider Extrusion Coupling** (`config/provider-chamber.yaml` + `config/provider-extruder.yaml`):
-
-- Two provider instances coupled through one shared FluxGraph graph
-- Demonstrates cross-provider thermal interaction and synchronization behavior
-- See [docs/demo-reactor.md](docs/demos/demo-reactor.md)
-
-### Architecture Overview
-
-Provider-sim is organized into explicit layers:
-
-- **`src/core/`**: process entrypoint and the `SimProviderRuntime` adapter; ADPP handling and the framed stdio transport come from the anolis-provider-sdk `run_loop`
-- **`src/devices/`**: device modules and shared device infrastructure
-- **`src/simulation/`**: simulation engine + external sim adapters
-- **`src/chaos/`**: runtime fault injection and control device
-
-Physics execution uses the SignalRegistry pattern to coordinate between:
-
-- **Physics ticker**: reads actuators, evaluates graph, writes sensors
-- **Device handlers**: check registry for physics-driven signals
-
-See [docs/architecture-signal-registry.md](docs/architecture-signal-registry.md) for details.
-
-## Logging
-
-Provider-sim uses a dedicated process logger and writes all diagnostics to
-`stderr` using this format:
-
-```text
-[YYYY-MM-DD HH:MM:SS.mmm] [LEVEL] [Component] message
-```
-
-Log level is controlled by `ANOLIS_PROVIDER_SIM_LOG_LEVEL`:
-
-- `debug`
-- `info` (default)
-- `warn`
-- `error`
-- `none`
-
-Values are case-insensitive. Invalid values fall back to `info` and emit one
-warning.
-
-Important: `stdout` is reserved for ADPP framed transport. Provider diagnostics
-must never be written to `stdout`.
-
-## Configuration
-
-Provider-sim supports device configuration via YAML files. This allows operators to customize device topology without code changes.
-
-### Basic Usage
+`mode: sim` needs a build with `ENABLE_FLUXGRAPH=ON`, which the
+`*-fluxgraph` presets set. A build without it rejects `mode: sim` at startup.
 
 ```bash
-# Run with configuration file (required)
-./anolis-provider-sim --config config/provider-sim.yaml
+cmake --preset dev-release-fluxgraph
+cmake --build --preset dev-release-fluxgraph --parallel
 ```
 
-### Configuration Files
+The build fetches the FluxGraph proto by default. To use a local FluxGraph
+checkout instead, add `-DFLUXGRAPH_DIR=../fluxgraph` to the configure step.
 
-Provider-sim includes several example configurations:
+### Tests
 
-- **`config/provider-sim.yaml`** - Default configuration defining `tempctl0`, `motorctl0`, `relayio0` and `analogsensor0`
-- **`config/multi-tempctl.yaml`** - Multiple temperature controllers (demonstrates same-type devices)
-- **`config/minimal.yaml`** - Single device for lightweight testing
-
-### Configuration Schema
-
-See [docs/configuration.md](docs/configuration.md) for complete schema documentation. Hardware provider guidance is in [For Hardware Provider Authors](#for-hardware-provider-authors).
-
-### Quick Example
-
-```yaml
-devices:
-  - id: tempctl0
-    type: tempctl
-    initial_temp: 25.0
-
-  - id: tempctl1
-    type: tempctl
-    initial_temp: 30.0
-
-simulation:
-  mode: non_interacting
-  tick_rate_hz: 10.0
-```
-
-## Fault Injection API
-
-Provider-sim includes a special control device (`chaos_control`) with functions for injecting deterministic failures into the simulation.
-This enables testing of fault handling, recovery workflows, and edge cases.
-
-### Functions
-
-#### `inject_device_unavailable`
-
-Makes a device appear unavailable for a specified duration.
-
-**Parameters:**
-
-- `device_id` (string): Target device ID
-- `duration_ms` (int64): Unavailability duration in milliseconds
-
-**Behavior:**
-
-- `ListDevices` omits the unavailable device while fault is active
-- `DescribeDevice` returns `NOT_FOUND` (unknown/unavailable target)
-- `ReadSignals` for explicit signal requests returns `NOT_FOUND`
-- `CallFunction` returns `INVALID_ARGUMENT` with injected fault message
-- Rejects invalid requests where `duration_ms <= 0`
-- Automatically clears after duration expires
-
-#### `inject_device_unreachable`
-
-Makes a device fail at the transport level for a specified duration, as a
-board that has gone dark on its bus.
-
-**Parameters:**
-
-- `device_id` (string): Target device ID
-- `duration_ms` (int64): Duration in milliseconds
-
-**Behavior:**
-
-- `ReadSignals` returns `UNAVAILABLE`
-- `CallFunction` returns `UNAVAILABLE`
-- `ListDevices` still lists the device and `DescribeDevice` still answers
-- Rejects invalid requests where `duration_ms <= 0`
-- Automatically clears after duration expires
-
-Use this, not `inject_device_unavailable`, to exercise a client's handling of
-a lost device: `NOT_FOUND` is not a transport failure.
-
-#### `inject_signal_fault`
-
-Forces a signal to report `FAULT` quality for a specified duration.
-
-**Parameters:**
-
-- `device_id` (string): Target device ID
-- `signal_id` (string): Target signal ID
-- `duration_ms` (int64): Fault duration in milliseconds
-
-**Behavior:**
-
-- Signal quality becomes `FAULT`
-- Signal value is still read live; only the quality changes
-- Rejects invalid requests where `duration_ms <= 0`
-- Automatically clears after duration expires
-
-#### `inject_call_latency`
-
-Adds artificial latency to all function calls on a device.
-
-**Parameters:**
-
-- `device_id` (string): Target device ID
-- `latency_ms` (int64): Added latency in milliseconds
-
-**Behavior:**
-
-- All CallFunction requests delayed by specified amount
-- Rejects invalid requests where `latency_ms < 0`
-- Useful for testing timeout handling and responsiveness under load
-
-#### `inject_call_failure`
-
-Causes a specific function to fail probabilistically.
-
-**Parameters:**
-
-- `device_id` (string): Target device ID
-- `function_id` (string): Target function ID (numeric ID as string, e.g., "1" for first function)
-- `failure_rate` (double): Failure probability (0.0 = never fail, 1.0 = always fail)
-
-**Behavior:**
-
-- Function returns `INVALID_ARGUMENT` at specified rate
-- Uses uniform random distribution for probabilistic failures
-- Requires numeric string `function_id` (for example, `"1"`)
-- Requires `failure_rate` in `[0.0, 1.0]`
-
-#### `clear_faults`
-
-Clears all active fault injections.
-
-**Parameters:** _(none)_
-
-**Behavior:**
-
-- Removes all device unavailability faults
-- Removes all device unreachability faults
-- Removes all signal faults
-- Removes all latency injections
-- Removes all failure rate injections
-
-### Usage Example
-
-```python
-import requests
-
-BASE_URL = "http://localhost:8080"
-
-# Inject device unavailable for 5 seconds
-requests.post(
-    f"{BASE_URL}/v0/call",
-    json={
-        "provider_id": "sim0",
-        "device_id": "chaos_control",
-        "function_id": 1,  # inject_device_unavailable
-        "args": {
-            "device_id": {"type": "string", "string": "tempctl0"},
-            "duration_ms": {"type": "int64", "int64": 5000},
-        },
-    },
-)
-
-# Inject 50% failure rate on set_setpoint (function_id=2)
-requests.post(
-    f"{BASE_URL}/v0/call",
-    json={
-        "provider_id": "sim0",
-        "device_id": "chaos_control",
-        "function_id": 4,  # inject_call_failure
-        "args": {
-            "device_id": {"type": "string", "string": "tempctl0"},
-            "function_id": {"type": "string", "string": "2"},
-            "failure_rate": {"type": "double", "double": 0.5},
-        },
-    },
-)
-
-# Clear all faults
-requests.post(
-    f"{BASE_URL}/v0/call",
-    json={"provider_id": "sim0", "device_id": "chaos_control", "function_id": 5, "args": {}},  # clear_faults
-)
-```
-
-## Examples
-
-Comprehensive working examples for each simulation mode are available in the [`examples/`](examples/) directory:
-
-- **[inert_mode](examples/inert_mode/)** - Protocol testing without physics (fast, deterministic)
-- **[non_interacting_mode](examples/non_interacting_mode/)** - Built-in first-order physics (standalone)
-- **[sim_mode](examples/sim_mode/)** - FluxGraph external simulation (advanced coupling)
-
-Each example includes:
-
-- Complete YAML configurations
-- Python test scripts
-- README with usage instructions
-
-See [examples/README.md](examples/README.md) for the full index and quick start guide.
-
-## Building
+Run from the repository root:
 
 ```bash
-# Linux/macOS
-cmake --preset dev-release
-cmake --build --preset dev-release --parallel
-
-# Windows (PowerShell)
-cmake --preset dev-windows-release
-cmake --build --preset dev-windows-release --parallel
+ctest --preset dev-release              # unit and provider integration tests
+ctest --preset dev-release -L unit      # unit tests only
+ctest --preset dev-release -L provider  # provider integration tests only
+ctest --preset dev-release-fluxgraph -L fluxgraph  # FluxGraph tests; FluxGraph build only
 ```
 
-List available presets:
-
-```bash
-cmake --list-presets
-ctest --list-presets
-```
-
-### Build Options
-
-**`ENABLE_FLUXGRAPH`** (default: `OFF`)
-
-- Controls FluxGraph adapter for external simulation support
-- When `ON`: Enables `sim` mode with FluxGraph protocol adapter
-- When `OFF`: Standalone build supporting only `inert` and `non_interacting` modes
-
-```bash
-# Standalone build (no FluxGraph dependencies, default)
-rm -rf build/dev-release
-cmake --preset dev-release
-cmake --build --preset dev-release --parallel
-# PowerShell clean:
-#   Remove-Item -Recurse -Force .\build\dev-windows-release
-#   cmake --preset dev-windows-release
-#   cmake --build --preset dev-windows-release --parallel
-
-# FluxGraph-enabled build (sim mode support)
-cmake --preset ci-linux-release-fluxgraph -DFLUXGRAPH_DIR=../fluxgraph
-cmake --build --preset ci-linux-release-fluxgraph --parallel
-# PowerShell:
-#   cmake --preset dev-windows-release-fluxgraph -DFLUXGRAPH_DIR=..\fluxgraph
-#   cmake --build --preset dev-windows-release-fluxgraph --parallel
-
-# sim mode will fail with: "mode=sim requires FluxGraph support. Rebuild with -DENABLE_FLUXGRAPH=ON"
-```
-
-### Linux
-
-See [docs/setup-linux.md](docs/setup-linux.md)
-
-## Running
-
-```bash
-# Requires --config argument
-./build/dev-release/anolis-provider-sim --config config/provider-sim.yaml
-# PowerShell: .\build\dev-windows-release\Release\anolis-provider-sim.exe --config config\provider-sim.yaml
-```
-
-Provider uses stdio+uint32_le transport for ADPP v1 communication with anolis-runtime.
-
-### TSAN Runtime Environment (Linux/macOS)
-
-If the build was configured with `-DENABLE_TSAN=ON`, set runtime environment variables before launching:
-
-```bash
-BUILD_DIR=build/dev-release
-VCPKG_TRIPLET=$(awk -F= '/^VCPKG_TARGET_TRIPLET:STRING=/{print $2}' "$BUILD_DIR/CMakeCache.txt")
-export LD_LIBRARY_PATH="$BUILD_DIR/vcpkg_installed/${VCPKG_TRIPLET:-x64-linux}/lib:${LD_LIBRARY_PATH:-}"
-export TSAN_OPTIONS="second_deadlock_stack=1 detect_deadlocks=1 history_size=7"
-```
-
-Then run:
-
-```bash
-./build/dev-release/anolis-provider-sim --config config/provider-sim.yaml
-```
-
-## Testing
-
-### CTest (preferred)
-
-Provider baseline suites are CTest-registered:
-
-```bash
-# Linux/macOS
-ctest --preset dev-release -L provider
-
-# Windows (PowerShell)
-ctest --preset dev-windows-release -L provider
-```
-
-### CTest Labels
-
-```bash
-# Full provider + unit suites
-ctest --preset dev-release
-
-# Provider integration only
-ctest --preset dev-release -L provider
-
-# Unit tests only
-ctest --preset dev-release -L unit
-
-# FluxGraph-only integration suite (FluxGraph build required)
-ctest --preset ci-linux-release-fluxgraph -L fluxgraph
-```
-
-**Basic Protocol Tests:**
-
-```bash
-python tests/test_hello.py              # ADPP Hello handshake validation
-python tests/test_adpp_integration.py   # Full ADPP protocol compliance
-python tests/test_multi_instance.py     # Multiple provider instances
-```
-
-**Fault Injection Tests:**
-
-```bash
-# Run all fault injection tests
-python tests/test_fault_injection.py --test all
-
-# Run individual fault injection tests
-python tests/test_fault_injection.py --test device_unavailable
-python tests/test_fault_injection.py --test signal_fault
-python tests/test_fault_injection.py --test call_latency
-python tests/test_fault_injection.py --test call_failure
-python tests/test_fault_injection.py --test clear_faults
-python tests/test_fault_injection.py --test multiple_devices
-```
-
-All tests use the stdio+uint32_le transport and validate correct ADPP v1 behavior.
-
-## Architecture Details
-
-Provider-sim implements ADPP v1 using stdio+uint32_le transport. Key components:
-
-- **device_manager**: Routes ADPP calls to device implementations
-- **Device implementations**: Simulate realistic device behaviors with state machines
-- **Fault injection**: Global state tracking for injected faults
-- **Transport**: stdio with uint32_le message framing (ADPP v1 standard)
-
-Physical device documentation and operational context available in [docs/](docs/).
-
-## Safe Initialization in Provider-Sim
-
-Provider-sim demonstrates compliance with the **Anolis Provider Safe Initialization Contract**.
-All devices initialize in safe, inactive states on startup, ensuring physical safety and predictable behavior.
-
-### Device Safe Defaults
-
-| Device            | Safe State                      | Rationale                                                                 |
-| ----------------- | ------------------------------- | ------------------------------------------------------------------------- |
-| **tempctl0**      | Relays OFF, Open-loop mode      | No heating actuation; monitoring only                                     |
-| **motorctl0**     | Duty cycle = 0 (both motors)    | No motion; PWM outputs disabled                                           |
-| **relayio0**      | Both relays OPEN (de-energized) | Fail-safe state; external equipment unaffected                            |
-| **analogsensor0** | No actuation outputs            | `calibrate_channel` and `inject_noise` change only simulated sensor state |
-| **chaos_control** | No faults injected on startup   | Clean slate for fault injection testing                                   |
-
-### Implementation Details
-
-Device state structures use C++ member initializers to guarantee safe defaults:
-
-**tempctl0** (`src/devices/tempctl/tempctl_device.cpp`):
-
-```cpp
-struct State {
-    double tc1_c = 25.0;           // Ambient temperature
-    double tc2_c = 25.0;
-    bool relay1 = false;           // ✅ Safe: OFF
-    bool relay2 = false;           // ✅ Safe: OFF
-    std::string mode = "open";     // ✅ Safe: No control action
-    double setpoint_c = 60.0;      // Not active in open-loop
-};
-```
-
-**motorctl0** (`src/devices/motorctl/motorctl_device.cpp`):
-
-```cpp
-struct State {
-    double duty1 = 0.0;  // ✅ Safe: No PWM output
-    double duty2 = 0.0;  // ✅ Safe: No PWM output
-    double speed1 = 0.0; // Stationary
-    double speed2 = 0.0;
-    double max_rpm = 3200.0;  // Set from max_speed config
-};
-```
-
-**relayio0** (`src/devices/relayio/relayio_device.cpp`):
-
-```cpp
-struct State {
-    bool relay_ch1 = false;  // ✅ Safe: Open/de-energized
-    bool relay_ch2 = false;  // ✅ Safe: Open/de-energized
-    bool relay_ch3 = false;  // ✅ Safe: Open/de-energized
-    bool relay_ch4 = false;  // ✅ Safe: Open/de-energized
-    bool gpio_input_1 = false;
-    bool gpio_input_2 = false;
-    bool gpio_input_3 = false;
-    bool gpio_input_4 = false;
-};
-```
-
-### Contract Compliance Verification
-
-Provider-sim meets all safe initialization requirements:
-
-- ✅ **No Actuation**: Relays open, motors stopped, no outputs active
-- ✅ **No Heating/Cooling**: Temperature controller in open-loop (monitoring only)
-- ✅ **No Motion**: Motor duty cycles = 0
-- ✅ **No State Assumptions**: Static initializers ensure safe state regardless of prior execution
-- ✅ **Hardware Verification**: N/A (simulation); real providers must query hardware state
-
-### Testing Safe Initialization
-
-Validate safe defaults:
-
-```bash
-# Start provider-sim
-./build/dev-release/anolis-provider-sim --config config/provider-sim.yaml
-
-# In separate terminal, use anolis runtime
-# - With automation.enabled, runtime starts in IDLE mode (control operations blocked);
-#   without automation there is no mode gate
-# - Devices discovered with capabilities advertised
-# - Query device signals to verify safe states:
-curl http://localhost:8080/v0/state/sim0/tempctl0
-# Expected: relay1_state=false, relay2_state=false, control_mode="open"
-
-curl http://localhost:8080/v0/state/sim0/motorctl0
-# Expected: motor1_duty=0.0, motor2_duty=0.0, motor1_speed=0.0, motor2_speed=0.0
-
-curl http://localhost:8080/v0/state/sim0/relayio0
-# Expected: relay_ch1_state=false, relay_ch2_state=false
-```
-
-### For Hardware Provider Authors
-
-When building providers for real hardware, use this as a reference:
-
-1. **Read hardware state first**: Query current actuator positions/states
-2. **Command safe state explicitly**: Don't assume power-on-reset is safe
-3. **Log verification**: Record confirmation that safe state was achieved
-4. **Use hardware disable lines**: Prefer hardware interlocks over software-only disable
-
-Example pattern for hardware providers:
-
-```cpp
-void initialize_device() {
-    // 1. Query current hardware state
-    HardwareState current = read_hardware_state();
-
-    // 2. Log current state for diagnostics
-    LOG_INFO("Device startup state: " << current.to_string());
-
-    // 3. Command safe state explicitly
-    command_relay_open();
-    command_motor_disable();
-    command_heater_off();
-
-    // 4. Verify safe state achieved
-    HardwareState verified = read_hardware_state();
-    if (!verified.is_safe()) {
-        LOG_ERROR("Failed to achieve safe state: " << verified.to_string());
-        // Provider should exit or mark device unavailable
-    }
-
-    LOG_INFO("Device initialized in safe state");
-}
-```
-
-See
-[Anolis Provider Safe Initialization Contract](https://github.com/anolishq/anolis/blob/main/docs/providers.md#safe-initialization-contract)
-for complete requirements.
+On Windows use the `dev-windows-release` preset. ThreadSanitizer builds need
+extra environment variables at run time; see
+[docs/setup-linux.md](docs/setup-linux.md).
+
+[docs/dependencies.md](docs/dependencies.md) covers dependency, versioning and
+CI policy. For local API docs, run `doxygen docs/Doxyfile` from the repository
+root; output goes to `build/docs/doxygen/html/`.
