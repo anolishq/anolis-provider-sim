@@ -12,6 +12,8 @@ This document defines the `anolis-provider-sim` YAML configuration used at proce
 
 ## Provider Config Schema
 
+<!-- validate: none -->
+
 ```yaml
 provider: # Optional
   name: chamber-provider
@@ -87,6 +89,8 @@ Additional notes:
 
 Default provider config:
 
+<!-- validate: none -->
+
 ```yaml
 # config/provider-sim.yaml
 devices:
@@ -108,6 +112,8 @@ simulation:
 
 Minimal inert config:
 
+<!-- validate: none -->
+
 ```yaml
 # config/minimal.yaml
 devices:
@@ -120,6 +126,8 @@ simulation:
 ```
 
 FluxGraph sim config:
+
+<!-- validate: none -->
 
 ```yaml
 # config/provider-chamber.yaml
@@ -159,6 +167,8 @@ Use FluxGraph docs as the authoritative schema source:
 ## Runtime Integration
 
 The runtime passes the provider config path through provider process args:
+
+<!-- validate: runtime-config -->
 
 ```yaml
 providers:

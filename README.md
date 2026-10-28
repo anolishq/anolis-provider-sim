@@ -45,6 +45,8 @@ The binary is at `./bin/anolis-provider-sim`.
 
 Write a provider config, for example `provider-sim.yaml`:
 
+<!-- validate: none -->
+
 ```yaml
 devices:
   - id: tempctl0
@@ -60,6 +62,8 @@ simulation:
 ```
 
 Then point the runtime's `providers` section at it:
+
+<!-- validate: runtime-config -->
 
 ```yaml
 providers:
