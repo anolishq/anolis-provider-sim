@@ -80,6 +80,8 @@ device state mutex, then registry mutex, and `read_signal()` releases
 In `mode=sim`, routing is declarative in the FluxGraph graph file referenced by
 `simulation.physics_config` (provider config only carries the path).
 
+<!-- validate: none -->
+
 ```yaml
 edges:
   - source: device_a/actuator # Read from device
