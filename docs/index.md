@@ -2,6 +2,7 @@
 
 `anolis-provider-sim` is an ADPP provider that serves simulated devices, so the runtime and new providers can be developed and tested without hardware.
 The repository [README](https://github.com/anolishq/anolis-provider-sim/blob/main/README.md) covers the device roster, protocol and usage.
+To write a provider of your own, start with the SDK's [Writing a provider](https://github.com/anolishq/anolis-provider-sdk/blob/main/docs/writing-a-provider.md); the simulator's [`src/devices/`](https://github.com/anolishq/anolis-provider-sim/tree/main/src/devices) is a worked example built on it.
 
 ## Pages
 
