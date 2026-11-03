@@ -22,6 +22,13 @@ commit messages only.
   rejects; v1.0.6 includes it. `proto/fluxgraph.proto` is byte-identical
   between the two releases.
 
+- CI conformance harness: anolis-protocol 1.6.0 -> 1.9.0, which adds the
+  `--config-schema` envelope check (1.7.0) and the `--check-host` check (1.8.0,
+  skipped: sim does not implement the verb), and from 1.9.0 gates `GetHealth`,
+  fails a crash on `--config-schema` or `--check-host`, checks Hello/manifest
+  level agreement at L1 and checks that `--check-config` rejects an invalid
+  config. (#135)
+
 ## [0.2.8] - 2026-10-18
 
 ### Added
