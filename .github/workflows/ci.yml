@@ -221,8 +221,10 @@ jobs:
           cmake --preset "${{ matrix.configure_preset }}"
           cmake --build --preset "${{ matrix.configure_preset }}" --parallel
 
-      - name: Test (CTest provider baseline)
-        run: ctest --preset "${{ matrix.test_preset }}" -L provider
+      # -L is a regex: the provider integration tests and the gtest unit tests
+      # (gtest_discover_tests labels them "unit"; anolis-provider-sim#128).
+      - name: Test (CTest provider baseline and unit tests)
+        run: ctest --preset "${{ matrix.test_preset }}" -L 'provider|unit'
 
   provider-conformance:
     name: ADPP Conformance (Linux)
@@ -331,9 +333,9 @@ jobs:
           cmake --preset "${{ matrix.configure_preset }}"
           cmake --build --preset "${{ matrix.configure_preset }}" --parallel
 
-      - name: Test (CTest provider baseline)
+      - name: Test (CTest provider baseline and unit tests)
         shell: pwsh
-        run: ctest --preset "${{ matrix.test_preset }}" -L provider
+        run: ctest --preset "${{ matrix.test_preset }}" -L 'provider|unit'
 
   windows-fluxgraph-build:
     name: Windows Release (FluxGraph ON, strict build)
