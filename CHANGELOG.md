@@ -32,7 +32,7 @@ commit messages only.
 - CI runs the gtest unit tests. The Linux and Windows release lanes ran
   `ctest -L provider`, which selects only the five integration tests, so the
   `unit`-labelled `provider.unit.*` cases ran in no lane. Both lanes now run
-  `ctest -L 'provider|unit'`. The ThreadSanitizer lane still runs
+  `ctest -L '^(provider|unit)$'`. The ThreadSanitizer lane still runs
   `-L provider`: the unit tests start no threads. (#128)
 
 ## [0.2.8] - 2026-10-18
