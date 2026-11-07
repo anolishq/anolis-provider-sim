@@ -57,10 +57,12 @@ jobs:
       - name: Setup vcpkg
         uses: anolishq/.github/.github/actions/setup-vcpkg@7a3a0624c056ea20fcb901968c482f9ed2ffb818 # v2.8
         with:
-          triplet: x64-linux-static
-          # Subset of the linux-fluxgraph closure (no grpc/fluxgraph); read-only
-          # so it can't clobber the shared x64-linux-static key (see ci.yml).
-          cache-write: "false"
+          # ci-tsan builds x64-linux-tsan. The triplet names the cache key, so
+          # naming x64-linux-static here restored the x64-linux-static build's
+          # packages, which this job cannot use, and it rebuilt the tsan closure
+          # every run. Under its own key the job saves without touching the
+          # x64-linux-static entry, so cache-write keeps its default.
+          triplet: x64-linux-tsan
 
       - name: Configure
         run: cmake --preset ci-tsan
