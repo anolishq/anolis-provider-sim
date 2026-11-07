@@ -209,12 +209,12 @@ jobs:
         uses: anolishq/.github/.github/actions/setup-vcpkg@7a3a0624c056ea20fcb901968c482f9ed2ffb818 # v2.8
         with:
           triplet: x64-linux-static
-          # Read-only. The shared valgrind-leak, clang-tidy-diff and
-          # dependency-scan workflows save this x64-linux-static key with the
-          # same closure; linux-fluxgraph keys its own entry (fluxgraph-on).
-          # Required since v2.4 (#97) anchors the key to the consumer manifest, so
-          # these lanes — previously key-divergent — now share one key.
-          cache-write: "false"
+          # This lane saves the x64-linux-static key. It installs the manifest
+          # without the fluxgraph feature: the closure that provider-conformance
+          # (read-only) and the shared valgrind-leak, clang-tidy-diff and
+          # dependency-scan workflows restore. From anolishq/.github v2.9 those
+          # three no longer save, so this is the key's writer.
+          # linux-fluxgraph keys its own entry (fluxgraph-on).
 
       - name: Build
         run: |
@@ -246,11 +246,7 @@ jobs:
         uses: anolishq/.github/.github/actions/setup-vcpkg@7a3a0624c056ea20fcb901968c482f9ed2ffb818 # v2.8
         with:
           triplet: x64-linux-static
-          # Read-only. The shared valgrind-leak, clang-tidy-diff and
-          # dependency-scan workflows save this x64-linux-static key with the
-          # same closure; linux-fluxgraph keys its own entry (fluxgraph-on).
-          # Required since v2.4 (#97) anchors the key to the consumer manifest, so
-          # these lanes — previously key-divergent — now share one key.
+          # Read-only: linux-release saves this key with the same closure.
           cache-write: "false"
 
       - name: Build provider (no hardware)
