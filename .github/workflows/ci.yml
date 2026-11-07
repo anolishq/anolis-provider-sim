@@ -209,9 +209,9 @@ jobs:
         uses: anolishq/.github/.github/actions/setup-vcpkg@7a3a0624c056ea20fcb901968c482f9ed2ffb818 # v2.8
         with:
           triplet: x64-linux-static
-          # Subset of the linux-fluxgraph closure (no grpc/fluxgraph). Read-only
-          # so this faster lane can't win the save race and freeze the shared key
-          # without grpc; linux-fluxgraph is the sole x64-linux-static writer.
+          # Read-only. The shared valgrind-leak, clang-tidy-diff and
+          # dependency-scan workflows save this x64-linux-static key with the
+          # same closure; linux-fluxgraph keys its own entry (fluxgraph-on).
           # Required since v2.4 (#97) anchors the key to the consumer manifest, so
           # these lanes — previously key-divergent — now share one key.
           cache-write: "false"
@@ -246,9 +246,9 @@ jobs:
         uses: anolishq/.github/.github/actions/setup-vcpkg@7a3a0624c056ea20fcb901968c482f9ed2ffb818 # v2.8
         with:
           triplet: x64-linux-static
-          # Subset of the linux-fluxgraph closure (no grpc/fluxgraph). Read-only
-          # so this faster lane can't win the save race and freeze the shared key
-          # without grpc; linux-fluxgraph is the sole x64-linux-static writer.
+          # Read-only. The shared valgrind-leak, clang-tidy-diff and
+          # dependency-scan workflows save this x64-linux-static key with the
+          # same closure; linux-fluxgraph keys its own entry (fluxgraph-on).
           # Required since v2.4 (#97) anchors the key to the consumer manifest, so
           # these lanes — previously key-divergent — now share one key.
           cache-write: "false"
@@ -463,7 +463,12 @@ jobs:
       - name: Setup vcpkg
         uses: anolishq/.github/.github/actions/setup-vcpkg@7a3a0624c056ea20fcb901968c482f9ed2ffb818 # v2.8
         with:
-          triplet: x64-linux-static
+          # A cache-key label, not a vcpkg triplet: setup-vcpkg uses this input
+          # only to name the key. This job installs grpc for both x64-linux
+          # (fluxgraph-server) and x64-linux-static (this provider). Under the
+          # shared x64-linux-static key it restored the smaller closure saved
+          # by other jobs, rebuilt grpc twice (about 105 min), and could not save.
+          triplet: fluxgraph-on
 
       - name: Build FluxGraph server
         working-directory: fluxgraph
