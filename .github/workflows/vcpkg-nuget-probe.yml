@@ -28,12 +28,11 @@ jobs:
           sudo apt-get update
           time sudo apt-get install -y mono-complete
           mono --version | head -1
-          # Imports the system certificates into mono's store; without them the feed fails TLS.
-          dpkg -L mono-devel mono-runtime mono-libraries | grep -i -E 'cert|mozroots' || true
-          certsync="$(find /usr/lib/mono -name cert-sync.exe | head -1)"
-          echo "cert-sync.exe: ${certsync:-not found}"
-          test -n "$certsync"
-          sudo mono "$certsync" /etc/ssl/certs/ca-certificates.crt | tail -2
+          # Loads Mozilla's root list into mono's machine store; without it the
+          # feed fails TLS. curl fetches the list because mono cannot yet.
+          curl -fsSL -o "$RUNNER_TEMP/certdata.txt" \
+            https://hg.mozilla.org/releases/mozilla-release/raw-file/default/security/nss/lib/ckfw/builtins/certdata.txt
+          sudo mozroots --import --machine --sync --file "$RUNNER_TEMP/certdata.txt" | tail -3
 
       - name: Setup vcpkg
         uses: anolishq/.github/.github/actions/setup-vcpkg@2f08cae7f3b9bfaa817b822e256d9f66b1fdb18d # v2.10
