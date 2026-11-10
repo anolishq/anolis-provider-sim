@@ -1,0 +1,67 @@
+name: vcpkg NuGet probe
+
+# Draft-only experiment, not for merging. Publishes one small package to the
+# organization's GitHub Packages feed and restores it, to find out whether that
+# feed can replace actions/cache for vcpkg's binary cache.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  probe:
+    name: NuGet feed probe
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    env:
+      FEED_URL: https://nuget.pkg.github.com/anolishq/index.json
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install mono
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          time sudo apt-get install -y mono-complete
+          mono --version | head -1
+
+      - name: Setup vcpkg
+        uses: anolishq/.github/.github/actions/setup-vcpkg@2f08cae7f3b9bfaa817b822e256d9f66b1fdb18d # v2.10
+        with:
+          triplet: nuget-probe
+          cache-write: "false"
+
+      - name: Point vcpkg at the feed
+        env:
+          FEED_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FEED_USER: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+          nuget="$("$VCPKG_ROOT/vcpkg" fetch nuget | tail -n 1)"
+          mono "$nuget" sources add -Source "$FEED_URL" -StorePasswordInClearText \
+            -Name GitHubPackages -UserName "$FEED_USER" -Password "$FEED_TOKEN"
+          mono "$nuget" setapikey "$FEED_TOKEN" -Source "$FEED_URL"
+          echo "VCPKG_BINARY_SOURCES=clear;nuget,$FEED_URL,readwrite" >> "$GITHUB_ENV"
+
+      - name: First install (builds and publishes, or restores on a re-run)
+        working-directory: ${{ runner.temp }}
+        run: |
+          set -euo pipefail
+          time "$VCPKG_ROOT/vcpkg" install zlib --triplet x64-linux --classic
+
+      - name: Second install from a clean tree (must restore from the feed)
+        working-directory: ${{ runner.temp }}
+        run: |
+          set -euo pipefail
+          "$VCPKG_ROOT/vcpkg" remove zlib --triplet x64-linux --classic
+          rm -rf "$VCPKG_ROOT/buildtrees" "$VCPKG_ROOT/packages"
+          out="$RUNNER_TEMP/second-install.log"
+          time "$VCPKG_ROOT/vcpkg" install zlib --triplet x64-linux --classic | tee "$out"
+          if ! grep -q 'Restored [1-9][0-9]* package(s) from' "$out"; then
+            echo "::error::the second install did not restore from the feed"
+            exit 1
+          fi
