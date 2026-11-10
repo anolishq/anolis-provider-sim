@@ -460,16 +460,23 @@ jobs:
         uses: anolishq/.github/.github/actions/setup-vcpkg@f4817837f29993c35b5350fbb5dfe2563437fcde # v2.11
         with:
           # A cache-key label, not a vcpkg triplet: setup-vcpkg uses this input
-          # only to name the key. This job installs grpc for both x64-linux
-          # (fluxgraph-server) and x64-linux-static (this provider). Under the
-          # shared x64-linux-static key it restored the smaller closure saved
-          # by other jobs, rebuilt grpc twice (about 105 min), and could not save.
+          # only to name the key. This job installs a larger closure (grpc) than
+          # the x64-linux-static key's writer, so it keeps its own entry.
           triplet: fluxgraph-on
 
+      # Everything in this job uses x64-linux-static as both target and host
+      # triplet (the ci-linux-release presets set the host too), so grpc is
+      # built once. Before, the provider's target was x64-linux-static and its
+      # host tools, like fluxgraph-server, used vcpkg's built-in x64-linux, which
+      # has the same settings under another name: grpc was compiled twice, 55
+      # and 52 min. fluxgraph's own preset names x64-linux, hence the overrides.
       - name: Build FluxGraph server
         working-directory: fluxgraph
         run: |
-          cmake --preset ci-linux-release-server
+          cmake --preset ci-linux-release-server \
+            -DVCPKG_OVERLAY_TRIPLETS="$GITHUB_WORKSPACE/triplets" \
+            -DVCPKG_TARGET_TRIPLET=x64-linux-static \
+            -DVCPKG_HOST_TRIPLET=x64-linux-static
           cmake --build --preset ci-linux-release-server --parallel
 
       - name: Build provider-sim (FluxGraph ON)
