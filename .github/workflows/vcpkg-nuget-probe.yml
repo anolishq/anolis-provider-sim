@@ -26,8 +26,10 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update
-          time sudo apt-get install -y mono-complete
+          time sudo apt-get install -y mono-complete ca-certificates-mono
           mono --version | head -1
+          # Imports the system certificates into mono's store; without them the feed fails TLS.
+          sudo cert-sync /etc/ssl/certs/ca-certificates.crt | tail -2
 
       - name: Setup vcpkg
         uses: anolishq/.github/.github/actions/setup-vcpkg@2f08cae7f3b9bfaa817b822e256d9f66b1fdb18d # v2.10
