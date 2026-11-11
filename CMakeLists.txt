@@ -69,8 +69,8 @@ include(FetchContent)
 # overrides with -DFETCHCONTENT_SOURCE_DIR_ANOLIS_PROVIDER_SDK=<path-to-sdk-clone>.
 FetchContent_Declare(
     anolis_provider_sdk
-    URL https://github.com/anolishq/anolis-provider-sdk/releases/download/v0.2.0/anolis-provider-sdk-0.2.0-source.tar.gz
-    URL_HASH SHA256=9e4a57f2e95aa142b22a2a3eabd6912210bb94b914591aeb4bf54923d5c1d93b
+    URL https://github.com/anolishq/anolis-provider-sdk/releases/download/v0.7.0/anolis-provider-sdk-0.7.0-source.tar.gz
+    URL_HASH SHA256=3129a38cb9f1a87c48c2450ec376eecdcf423c3c162954e6e629ed7673f01701
 )
 FetchContent_MakeAvailable(anolis_provider_sdk)
 
