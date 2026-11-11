@@ -26,12 +26,18 @@ commit messages only.
     the same spec, so calls through it are refused as before.
   - A call to a device made unavailable with `inject_device_unavailable` is
     `CODE_NOT_FOUND` from the SDK, where sim answered
-    `CODE_INVALID_ARGUMENT`.
-  - Hello advertises `supports_deadlines`, and a call past its deadline is
-    `CODE_DEADLINE_EXCEEDED` (semantics §8.4).
+    `CODE_INVALID_ARGUMENT`. Through the anolis runtime's `POST /v0/call`,
+    that is HTTP 404 where it was 400.
+  - Hello advertises `supports_deadlines` (semantics §8.4). A call whose
+    deadline has already passed is `CODE_DEADLINE_EXCEEDED` before it reaches
+    a device, and a malformed deadline is `CODE_INVALID_ARGUMENT`. A call that
+    finishes after its deadline, for example under `inject_call_latency`, is
+    also answered `CODE_DEADLINE_EXCEEDED`, with `side_effects = possible`
+    and no results. The anolis runtime sets no deadline, so this reaches only
+    a client that sends one.
   - A reply over the 1 MiB frame cap is answered `CODE_RESOURCE_EXHAUSTED`,
     and sim keeps serving instead of exiting.
-  - The SDK is now Apache-2.0.
+  - The SDK is now Apache-2.0. Sim stays AGPL-3.0.
 
 - FluxGraph builds (`ENABLE_FLUXGRAPH=ON`) fetch the fluxgraph v1.0.6
   source tarball for its proto, and the Linux FluxGraph CI lane builds
