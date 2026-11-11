@@ -29,10 +29,13 @@ Upgrade notes:
   with `inject_device_unavailable`: `CODE_NOT_FOUND`, HTTP 404 on
   `POST /v0/call`, where it was `CODE_INVALID_ARGUMENT`, 400.
 - **A client that talks ADPP to sim directly** gets `CODE_INVALID_ARGUMENT` for
-  an undeclared argument, which sim used to ignore, for a number or bool whose
-  type tag and field disagree, and for a NaN `failure_rate`. A call with bad
-  arguments that also fails a precondition gets the argument error first. It
-  gets `CODE_DEADLINE_EXCEEDED` for a call past the deadline it sent.
+  an undeclared argument, which sim used to ignore, for a NaN `failure_rate`,
+  and for a number or bool whose type tag and field disagree, which sim ran on
+  a zero value (a setpoint of 0, a relay switched off). A call with bad
+  arguments that also fails a precondition gets the argument error,
+  `CODE_INVALID_ARGUMENT` or `CODE_OUT_OF_RANGE`, where it got
+  `CODE_FAILED_PRECONDITION`. It gets `CODE_DEADLINE_EXCEEDED` for a call past
+  the deadline it sent.
 - A test that asserts one of the old codes needs updating.
 
 ### Changed
@@ -55,8 +58,8 @@ Upgrade notes:
     a device, and a malformed deadline is `CODE_INVALID_ARGUMENT`. A call that
     succeeds after its deadline, for example under `inject_call_latency`, is
     also answered `CODE_DEADLINE_EXCEEDED`, with `side_effects = possible`
-    and no results; one that fails keeps its own error. The anolis runtime sets no deadline, so this reaches only
-    a client that sends one.
+    and no results; one that fails keeps its own error. The anolis runtime
+    sets no deadline, so this reaches only a client that sends one.
   - A reply over the 1 MiB frame cap is answered `CODE_RESOURCE_EXHAUSTED`,
     and sim keeps serving instead of exiting.
   - The SDK is now Apache-2.0. Sim stays AGPL-3.0.
