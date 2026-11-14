@@ -13,7 +13,61 @@ commit messages only.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-11
+
+0.3.0 is a minor release because calls sim used to accept can now be refused,
+and some refusals change code: the SDK it builds on, now 0.7.0, checks a call's
+arguments against the declared spec before sim's handler runs, refuses a call
+whose deadline has passed, and answers a call to a device made unavailable by
+fault injection itself.
+
+Upgrade notes:
+
+- **Calls through the anolis runtime are refused as before.** The runtime
+  checks every call against the same spec before sending it and sets no
+  deadline. The one change it passes on is a call to a device made unavailable
+  with `inject_device_unavailable`: `CODE_NOT_FOUND`, HTTP 404 on
+  `POST /v0/call`, where it was `CODE_INVALID_ARGUMENT`, 400.
+- **A client that talks ADPP to sim directly** gets `CODE_INVALID_ARGUMENT` for
+  an undeclared argument, which sim used to ignore, for a NaN `failure_rate`,
+  and for a number or bool whose type tag and field disagree, which sim ran on
+  a zero value (a setpoint of 0, a relay switched off). A call with bad
+  arguments that also fails a precondition gets the argument error,
+  `CODE_INVALID_ARGUMENT` or `CODE_OUT_OF_RANGE`, where it got
+  `CODE_FAILED_PRECONDITION`. It gets `CODE_DEADLINE_EXCEEDED` for a call past
+  the deadline it sent.
+- A test that asserts one of the old codes needs updating.
+
 ### Changed
+
+- anolis-provider-sdk 0.2.0 -> 0.7.0. What a client of sim sees:
+  - A call's arguments are checked against the function's declared spec
+    before sim's handler runs (semantics §8.3). Sim used to ignore an
+    undeclared argument, and the SDK now refuses it as
+    `CODE_INVALID_ARGUMENT`. A call that has bad arguments and also fails a
+    precondition, such as `set_relay` outside open mode, gets the argument
+    error where it got `CODE_FAILED_PRECONDITION`, and a NaN `failure_rate`
+    is refused. The anolis runtime already checks calls against
+    the same spec, so calls through it are refused as before.
+  - A call to a device made unavailable with `inject_device_unavailable` is
+    `CODE_NOT_FOUND` from the SDK, where sim answered
+    `CODE_INVALID_ARGUMENT`. Through the anolis runtime's `POST /v0/call`,
+    that is HTTP 404 where it was 400.
+  - Hello advertises `supports_deadlines` (semantics §8.4). A call whose
+    deadline has already passed is `CODE_DEADLINE_EXCEEDED` before it reaches
+    a device, and a malformed deadline is `CODE_INVALID_ARGUMENT`. A call that
+    succeeds after its deadline, for example under `inject_call_latency`, is
+    also answered `CODE_DEADLINE_EXCEEDED`, with `side_effects = possible`
+    and no results; one that fails keeps its own error. The anolis runtime
+    sets no deadline, so this reaches only a client that sends one.
+  - A reply over the 1 MiB frame cap is answered `CODE_RESOURCE_EXHAUSTED`,
+    and sim keeps serving instead of exiting.
+  - The SDK is now Apache-2.0. Sim stays AGPL-3.0.
+
+- CI: the ThreadSanitizer triplet links vcpkg libraries statically. vcpkg
+  builds abseil static on Linux, so with protobuf shared the process held two
+  abseil copies with different hash seeds, and the SDK's argument check missed
+  arguments that were sent. (#175)
 
 - FluxGraph builds (`ENABLE_FLUXGRAPH=ON`) fetch the fluxgraph v1.0.6
   source tarball for its proto, and the Linux FluxGraph CI lane builds
