@@ -1,0 +1,22 @@
+# Spike: the chamber and the extruder of multi-provider-extrusion.yaml as the
+# devices of one provider, on a version 2 graph in this process. Run with no
+# --sim-server, by a build with -DENABLE_FLUXGRAPH_V2=ON.
+provider:
+  name: extrusion-provider
+
+devices:
+  - id: tempctl0
+    type: tempctl
+    initial_temp: 22.0
+  - id: tempctl1
+    type: tempctl
+    initial_temp: 22.0
+  - id: motorctl0
+    type: motorctl
+    max_speed: 1500.0
+
+simulation:
+  mode: sim
+  tick_rate_hz: 10.0
+  physics_config: extrusion.v2.yaml
+  ambient_temp_c: 22.0

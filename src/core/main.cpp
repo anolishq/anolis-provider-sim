@@ -25,6 +25,9 @@
 #include "simulation/engines/local_engine.hpp"
 #include "simulation/engines/null_engine.hpp"
 #include "simulation/engines/remote_engine.hpp"
+#ifdef HAVE_FLUXGRAPH_V2
+#include "simulation/engines/v2_engine.hpp"
+#endif
 #include "simulation/simulation_engine.hpp"
 
 #ifdef HAVE_FLUXGRAPH
@@ -52,6 +55,13 @@ static std::unique_ptr<sim_engine::SimulationEngine> create_engine(const anolis_
             return std::make_unique<sim_engine::LocalEngine>();
 
         case SimulationMode::Sim:
+#ifdef HAVE_FLUXGRAPH_V2
+            // Spike: with no server named, the graph is a version 2 one and runs in this process.
+            if (sim_server_address.empty()) {
+                PSIM_LOG_INFO("Main", "mode=sim (FluxGraph version 2, in this process)");
+                return std::make_unique<sim_engine::V2Engine>(config.tick_rate_hz.value_or(10.0));
+            }
+#endif
 #ifdef HAVE_FLUXGRAPH
             if (sim_server_address.empty()) {
                 throw std::runtime_error("mode=sim requires --sim-server <host:port>");

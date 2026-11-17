@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.20)
 # Build-time feature switches (must be before project() for vcpkg)
 option(ENABLE_TSAN "Enable ThreadSanitizer for data race detection" OFF)
 option(ENABLE_FLUXGRAPH "Enable FluxGraph adapter for sim mode" OFF)
+option(ENABLE_FLUXGRAPH_V2 "Spike: FluxGraph's version 2 core in this process, for sim mode with no server" OFF)
 option(ANOLIS_PROVIDER_SIM_WARNINGS_AS_ERRORS "Treat first-party compiler warnings as errors" OFF)
 
 # Configure vcpkg features based on build options
@@ -177,9 +178,31 @@ else()
     message(STATUS "FluxGraph adapter: DISABLED (inert + non_interacting only)")
 endif()
 
+if(ENABLE_FLUXGRAPH_V2)
+    # Spike, throwaway. Pinned by commit, FluxGraph having no release with its
+    # version 2 core in it; FETCHCONTENT_SOURCE_DIR_FLUXGRAPH names a local
+    # clone instead.
+    FetchContent_Declare(
+        fluxgraph
+        GIT_REPOSITORY https://github.com/anolishq/fluxgraph.git
+        GIT_TAG f0282af1179c47d6d3153ebdf61f19ef8dd35fa0
+        EXCLUDE_FROM_ALL
+    )
+    set(FLUXGRAPH_BUILD_V2 ON CACHE BOOL "" FORCE)
+    set(FLUXGRAPH_YAML_ENABLED ON CACHE BOOL "" FORCE)
+    set(FLUXGRAPH_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(fluxgraph)
+    list(APPEND SOURCES src/simulation/engines/v2_engine.cpp)
+endif()
+
 add_executable(anolis-provider-sim
     ${SOURCES}
 )
+
+if(ENABLE_FLUXGRAPH_V2)
+    target_compile_definitions(anolis-provider-sim PRIVATE HAVE_FLUXGRAPH_V2)
+    target_link_libraries(anolis-provider-sim PRIVATE fluxgraph_v2 fluxgraph_v2_yaml)
+endif()
 
 if(ENABLE_FLUXGRAPH)
     add_dependencies(anolis-provider-sim fluxgraph_proto_gen)
