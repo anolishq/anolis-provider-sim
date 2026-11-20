@@ -28,9 +28,11 @@ edges:
         scale: 1000.0
         offset: 0.0
 
-  # Relay2 unused but must be defined so FluxGraph accepts the signal
+  # Relay2 unused but must be defined so FluxGraph accepts the signal. It
+  # writes a signal of its own: chamber_thermal.ambient_temp already has a
+  # writer above, and FluxGraph allows one writer per signal.
   - source: chamber/relay2_state
-    target: chamber_thermal.ambient_temp
+    target: chamber/relay2_unused
     transform:
       type: linear
       params:
