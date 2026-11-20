@@ -58,7 +58,7 @@ jobs:
         run: cmake --build --preset ci-linux-release-strict --parallel
 
       - name: Test
-        run: ctest --preset ci-linux-release-strict -L provider
+        run: ctest --preset ci-linux-release-strict -L '^(provider|unit)$'
 
       - name: Package binary artifact
         id: package
@@ -171,7 +171,7 @@ jobs:
         run: cmake --build --preset ci-linux-arm64-release-strict --parallel
 
       - name: Test
-        run: ctest --preset ci-linux-arm64-release-strict -L provider
+        run: ctest --preset ci-linux-arm64-release-strict -L '^(provider|unit)$'
 
       - name: Package binary artifact
         id: package
