@@ -1,7 +1,6 @@
 # Cross-repo compatibility refs consumed by provider compatibility lanes.
-# FluxGraph is intentionally floating (`main`) while provider/graph integration
-# is still evolving.
-# Revisit immutable SHA pinning before release hardening.
+# FluxGraph is pinned to a release tag (`ref` below), bumped by hand. CI's
+# "Resolve FluxGraph pin" step checks out that ref to build fluxgraph-server.
 
 fluxgraph:
   repository: anolishq/fluxgraph
