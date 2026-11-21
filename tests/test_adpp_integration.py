@@ -248,6 +248,118 @@ def test_precondition_check(client: AdppClient, protocol) -> bool:
     return True
 
 
+def _expect_code(resp, code: int, label: str) -> None:
+    assert resp.status.code == code, f"{label}: expected {code}, got {status_text(resp)}"
+    print(f"OK: {label}: {status_text(resp)}")
+
+
+def test_args_checked_before_relay_precondition(client: AdppClient, protocol) -> bool:
+    """#140: in closed mode, a bad set_relay request is still reported as bad
+    (ADPP 8.3), not as the mode precondition, which only a valid call gets."""
+    print("\n=== Test: set_relay validates args before its precondition ===")
+    codes = protocol.Status.Code
+    assert_ok(
+        client.call_function(
+            "tempctl0", function_name="set_mode", args={"mode": make_string_value(protocol, "closed")}
+        ),
+        "set_mode closed",
+    )
+    _expect_code(
+        client.call_function("tempctl0", args={}, function_name="set_relay"),
+        codes.CODE_INVALID_ARGUMENT,
+        "set_relay {}",
+    )
+    _expect_code(
+        client.call_function(
+            "tempctl0", args={"relay_index": make_int64_value(protocol, 1)}, function_name="set_relay"
+        ),
+        codes.CODE_INVALID_ARGUMENT,
+        "set_relay without state",
+    )
+    _expect_code(
+        client.call_function(
+            "tempctl0",
+            args={"relay_index": make_int64_value(protocol, 7), "state": make_bool_value(protocol, True)},
+            function_name="set_relay",
+        ),
+        codes.CODE_OUT_OF_RANGE,
+        "set_relay relay_index 7",
+    )
+    _expect_code(
+        client.call_function(
+            "tempctl0",
+            args={"relay_index": make_int64_value(protocol, 1), "state": make_bool_value(protocol, True)},
+            function_name="set_relay",
+        ),
+        codes.CODE_FAILED_PRECONDITION,
+        "set_relay valid args in closed mode",
+    )
+    assert_ok(
+        client.call_function("tempctl0", function_name="set_mode", args={"mode": make_string_value(protocol, "open")}),
+        "set_mode open",
+    )
+    return True
+
+
+def test_args_checked_before_calibrate_precondition(client: AdppClient, protocol) -> bool:
+    """#140: with sensor quality not GOOD, a bad calibrate_channel request is
+    still reported as bad. Quality turns NOISY 30 s after noise is injected."""
+    print("\n=== Test: calibrate_channel validates args before its precondition ===")
+    codes = protocol.Status.Code
+    assert_ok(
+        client.call_function(
+            "analogsensor0", function_name="inject_noise", args={"enabled": make_bool_value(protocol, True)}
+        ),
+        "inject_noise on",
+    )
+    deadline = time.time() + 45.0
+    while time.time() < deadline:
+        resp = client.read_signals("analogsensor0", ["sensor_quality"])
+        values = [v.value.string_value for v in resp.read_signals.values]
+        if values and values[0] != "GOOD":
+            break
+        time.sleep(1.0)
+    else:
+        raise AssertionError("sensor_quality stayed GOOD for 45 s after inject_noise")
+
+    _expect_code(
+        client.call_function("analogsensor0", args={}, function_name="calibrate_channel"),
+        codes.CODE_INVALID_ARGUMENT,
+        "calibrate {}",
+    )
+    _expect_code(
+        client.call_function(
+            "analogsensor0", args={"channel": make_string_value(protocol, "two")}, function_name="calibrate_channel"
+        ),
+        codes.CODE_INVALID_ARGUMENT,
+        "calibrate channel 'two'",
+    )
+    for channel in (0, 9):
+        _expect_code(
+            client.call_function(
+                "analogsensor0",
+                args={"channel": make_int64_value(protocol, channel)},
+                function_name="calibrate_channel",
+            ),
+            codes.CODE_OUT_OF_RANGE,
+            f"calibrate channel {channel}",
+        )
+    _expect_code(
+        client.call_function(
+            "analogsensor0", args={"channel": make_int64_value(protocol, 2)}, function_name="calibrate_channel"
+        ),
+        codes.CODE_FAILED_PRECONDITION,
+        "calibrate channel 2 while not GOOD",
+    )
+    assert_ok(
+        client.call_function(
+            "analogsensor0", function_name="inject_noise", args={"enabled": make_bool_value(protocol, False)}
+        ),
+        "inject_noise off",
+    )
+    return True
+
+
 def test_call_by_function_name(client: AdppClient, protocol) -> bool:
     """Verify Call.function_name path resolves correctly when function_id=0."""
     print("\n=== Test 7: Call by function_name ===")
@@ -374,6 +486,8 @@ def main() -> int:
             "motor_control",
             "relay_control",
             "precondition_check",
+            "args_before_relay_precondition",
+            "args_before_calibrate_precondition",
             "call_by_function_name",
             "wait_ready_diagnostics",
             "get_health_startup_state",
@@ -407,6 +521,10 @@ def main() -> int:
             "motor_control": lambda c: test_motor_control(c, protocol),
             "relay_control": lambda c: test_relay_control(c, protocol),
             "precondition_check": lambda c: test_precondition_check(c, protocol),
+            "args_before_relay_precondition": lambda c: test_args_checked_before_relay_precondition(c, protocol),
+            "args_before_calibrate_precondition": lambda c: test_args_checked_before_calibrate_precondition(
+                c, protocol
+            ),
             "call_by_function_name": lambda c: test_call_by_function_name(c, protocol),
             "wait_ready_diagnostics": lambda c: test_wait_ready_diagnostics(c),
             "get_health_startup_state": lambda c: test_get_health_startup_state(c, protocol),
