@@ -28,6 +28,9 @@ static constexpr const char *kProviderName = "anolis-provider-sim";
 static constexpr uint32_t kFnInjectDeviceUnavailable = 1;
 static constexpr uint32_t kFnInjectSignalFault = 2;
 static constexpr uint32_t kFnInjectCallLatency = 3;
+
+// The longest call latency the fault accepts, in milliseconds (#139).
+static constexpr int64_t kMaxCallLatencyMs = 10000;
 static constexpr uint32_t kFnInjectCallFailure = 4;
 static constexpr uint32_t kFnClearFaults = 5;
 static constexpr uint32_t kFnInjectDeviceUnreachable = 6;
@@ -184,6 +187,11 @@ CallResult call_function(uint32_t function_id, const std::map<std::string, Value
         }
         if (latency_ms < 0) {
             return bad("latency_ms must be >= 0");
+        }
+        // The delay runs on the provider's only request thread, so every
+        // request queued behind the call waits too; cap it (#139).
+        if (latency_ms > kMaxCallLatencyMs) {
+            return bad("latency_ms must be at most " + std::to_string(kMaxCallLatencyMs) + " (10 s)");
         }
 
         fault_injection::inject_call_latency(device_id, latency_ms);

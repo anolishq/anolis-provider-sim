@@ -401,6 +401,18 @@ def test_invalid_inputs(client: AdppClient, protocol) -> bool:
     assert resp.status.code == invalid_code, f"Expected invalid latency rejection, got {status_text(resp)}"
     assert "latency_ms must be >= 0" in resp.status.message
 
+    # #139: latency blocks the provider's only request thread, so it is capped.
+    resp = client.call_function(
+        "chaos_control",
+        3,
+        {
+            "device_id": make_string_value(protocol, "tempctl0"),
+            "latency_ms": make_int64_value(protocol, 10001),
+        },
+    )
+    assert resp.status.code == invalid_code, f"Expected over-limit latency rejection, got {status_text(resp)}"
+    assert "latency_ms must be at most 10000" in resp.status.message
+
     resp = client.call_function(
         "chaos_control",
         4,
