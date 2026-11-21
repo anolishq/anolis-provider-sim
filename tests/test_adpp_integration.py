@@ -264,10 +264,15 @@ def test_args_checked_before_relay_precondition(client: AdppClient, protocol) ->
         ),
         "set_mode closed",
     )
-    relay = {"function_name": "set_relay"}
-    _expect_code(client.call_function("tempctl0", args={}, **relay), codes.CODE_INVALID_ARGUMENT, "set_relay {}")
     _expect_code(
-        client.call_function("tempctl0", args={"relay_index": make_int64_value(protocol, 1)}, **relay),
+        client.call_function("tempctl0", args={}, function_name="set_relay"),
+        codes.CODE_INVALID_ARGUMENT,
+        "set_relay {}",
+    )
+    _expect_code(
+        client.call_function(
+            "tempctl0", args={"relay_index": make_int64_value(protocol, 1)}, function_name="set_relay"
+        ),
         codes.CODE_INVALID_ARGUMENT,
         "set_relay without state",
     )
@@ -275,7 +280,7 @@ def test_args_checked_before_relay_precondition(client: AdppClient, protocol) ->
         client.call_function(
             "tempctl0",
             args={"relay_index": make_int64_value(protocol, 7), "state": make_bool_value(protocol, True)},
-            **relay,
+            function_name="set_relay",
         ),
         codes.CODE_OUT_OF_RANGE,
         "set_relay relay_index 7",
@@ -284,7 +289,7 @@ def test_args_checked_before_relay_precondition(client: AdppClient, protocol) ->
         client.call_function(
             "tempctl0",
             args={"relay_index": make_int64_value(protocol, 1), "state": make_bool_value(protocol, True)},
-            **relay,
+            function_name="set_relay",
         ),
         codes.CODE_FAILED_PRECONDITION,
         "set_relay valid args in closed mode",
@@ -317,21 +322,32 @@ def test_args_checked_before_calibrate_precondition(client: AdppClient, protocol
     else:
         raise AssertionError("sensor_quality stayed GOOD for 45 s after inject_noise")
 
-    cal = {"function_name": "calibrate_channel"}
-    _expect_code(client.call_function("analogsensor0", args={}, **cal), codes.CODE_INVALID_ARGUMENT, "calibrate {}")
     _expect_code(
-        client.call_function("analogsensor0", args={"channel": make_string_value(protocol, "two")}, **cal),
+        client.call_function("analogsensor0", args={}, function_name="calibrate_channel"),
+        codes.CODE_INVALID_ARGUMENT,
+        "calibrate {}",
+    )
+    _expect_code(
+        client.call_function(
+            "analogsensor0", args={"channel": make_string_value(protocol, "two")}, function_name="calibrate_channel"
+        ),
         codes.CODE_INVALID_ARGUMENT,
         "calibrate channel 'two'",
     )
     for channel in (0, 9):
         _expect_code(
-            client.call_function("analogsensor0", args={"channel": make_int64_value(protocol, channel)}, **cal),
+            client.call_function(
+                "analogsensor0",
+                args={"channel": make_int64_value(protocol, channel)},
+                function_name="calibrate_channel",
+            ),
             codes.CODE_OUT_OF_RANGE,
             f"calibrate channel {channel}",
         )
     _expect_code(
-        client.call_function("analogsensor0", args={"channel": make_int64_value(protocol, 2)}, **cal),
+        client.call_function(
+            "analogsensor0", args={"channel": make_int64_value(protocol, 2)}, function_name="calibrate_channel"
+        ),
         codes.CODE_FAILED_PRECONDITION,
         "calibrate channel 2 while not GOOD",
     )
