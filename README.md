@@ -137,8 +137,10 @@ Argument rules:
 - `device_id`, `signal_id` and `function_id` are strings. `function_id` is the
   target function's numeric ID as a string, for example `"2"`, and must be 1 or
   more.
-- `duration_ms` is an `int64` above 0, and `latency_ms` an `int64` from 0 to
-  10000 (10 s).
+- `duration_ms` is an `int64` from 1 to 3600000 (1 hour), and `latency_ms` an
+  `int64` from 0 to 10000 (10 s).
+- `inject_device_unavailable` and `inject_device_unreachable` refuse
+  `chaos_control` itself as `device_id`: it would lock out `clear_faults`.
 - `failure_rate` is a `double` from 0.0 to 1.0.
 
 Faults with a `duration_ms` clear themselves when it expires. Latency and call

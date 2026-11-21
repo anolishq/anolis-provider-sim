@@ -401,6 +401,44 @@ def test_invalid_inputs(client: AdppClient, protocol) -> bool:
     assert resp.status.code == invalid_code, f"Expected invalid latency rejection, got {status_text(resp)}"
     assert "latency_ms must be >= 0" in resp.status.message
 
+    # #127: a duration past the cap is refused, not left to overflow the expiry
+    # time (which made the fault silently never active).
+    for fn in (1, 6):
+        resp = client.call_function(
+            "chaos_control",
+            fn,
+            {
+                "device_id": make_string_value(protocol, "tempctl0"),
+                "duration_ms": make_int64_value(protocol, 9223372036854775807),
+            },
+        )
+        assert resp.status.code == invalid_code, f"Expected over-limit duration rejection, got {status_text(resp)}"
+        assert "duration_ms must be at most 3600000" in resp.status.message
+    resp = client.call_function(
+        "chaos_control",
+        2,
+        {
+            "device_id": make_string_value(protocol, "tempctl0"),
+            "signal_id": make_string_value(protocol, "tc1_temp"),
+            "duration_ms": make_int64_value(protocol, 3600001),
+        },
+    )
+    assert resp.status.code == invalid_code, f"Expected over-limit signal duration rejection, got {status_text(resp)}"
+    assert "duration_ms must be at most 3600000" in resp.status.message
+
+    # #127: chaos_control cannot fault itself, which would lock out clear_faults.
+    for fn in (1, 6):
+        resp = client.call_function(
+            "chaos_control",
+            fn,
+            {
+                "device_id": make_string_value(protocol, "chaos_control"),
+                "duration_ms": make_int64_value(protocol, 1000),
+            },
+        )
+        assert resp.status.code == invalid_code, f"Expected self-target rejection, got {status_text(resp)}"
+        assert "chaos_control cannot target itself" in resp.status.message
+
     # #139: latency blocks the provider's only request thread, so it is capped.
     resp = client.call_function(
         "chaos_control",

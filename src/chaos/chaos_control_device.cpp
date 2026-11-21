@@ -31,6 +31,12 @@ static constexpr uint32_t kFnInjectCallLatency = 3;
 
 // The longest call latency the fault accepts, in milliseconds (#139).
 static constexpr int64_t kMaxCallLatencyMs = 10000;
+
+// The longest fault window, in milliseconds (one hour). Larger values used to
+// overflow the expiry time, so the fault was never active (#127).
+static constexpr int64_t kMaxFaultDurationMs = 3600000;
+
+static constexpr const char *kSelfDeviceId = "chaos_control";
 static constexpr uint32_t kFnInjectCallFailure = 4;
 static constexpr uint32_t kFnClearFaults = 5;
 static constexpr uint32_t kFnInjectDeviceUnreachable = 6;
@@ -148,7 +154,15 @@ CallResult call_function(uint32_t function_id, const std::map<std::string, Value
         if (duration_ms <= 0) {
             return bad("duration_ms must be > 0");
         }
+        if (duration_ms > kMaxFaultDurationMs) {
+            return bad("duration_ms must be at most " + std::to_string(kMaxFaultDurationMs) + " (1 hour)");
+        }
 
+        // Faulting chaos_control itself would block every chaos function,
+        // clear_faults included, until the window ends (#127).
+        if (device_id == kSelfDeviceId) {
+            return bad("chaos_control cannot target itself");
+        }
         fault_injection::inject_device_unavailable(device_id, duration_ms);
         return ok();
     }
@@ -169,6 +183,9 @@ CallResult call_function(uint32_t function_id, const std::map<std::string, Value
         }
         if (duration_ms <= 0) {
             return bad("duration_ms must be > 0");
+        }
+        if (duration_ms > kMaxFaultDurationMs) {
+            return bad("duration_ms must be at most " + std::to_string(kMaxFaultDurationMs) + " (1 hour)");
         }
 
         fault_injection::inject_signal_fault(device_id, signal_id, duration_ms);
@@ -239,7 +256,15 @@ CallResult call_function(uint32_t function_id, const std::map<std::string, Value
         if (duration_ms <= 0) {
             return bad("duration_ms must be > 0");
         }
+        if (duration_ms > kMaxFaultDurationMs) {
+            return bad("duration_ms must be at most " + std::to_string(kMaxFaultDurationMs) + " (1 hour)");
+        }
 
+        // Faulting chaos_control itself would block every chaos function,
+        // clear_faults included, until the window ends (#127).
+        if (device_id == kSelfDeviceId) {
+            return bad("chaos_control cannot target itself");
+        }
         fault_injection::inject_device_unreachable(device_id, duration_ms);
         return ok();
     }
