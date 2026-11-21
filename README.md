@@ -123,14 +123,14 @@ explains how the physics engine and the devices share signal values.
 
 Call functions on the `chaos_control` device to inject failures.
 
-| ID | Function                    | Arguments                                         | Effect                                                                                                                                                                                 |
-| -- | --------------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1  | `inject_device_unavailable` | `device_id`, `duration_ms`                        | The device is left out of `ListDevices`; `DescribeDevice` and `ReadSignals` return `NOT_FOUND`; `CallFunction` returns `INVALID_ARGUMENT`.                                             |
-| 2  | `inject_signal_fault`       | `device_id`, `signal_id`, `duration_ms`           | The signal reports `FAULT` quality. Its value is still read live.                                                                                                                      |
-| 3  | `inject_call_latency`       | `device_id`, `latency_ms`                         | Every `CallFunction` on the device is delayed by `latency_ms`. The provider serves one request at a time, so every request queued behind that call, `clear_faults` included, waits too. |
-| 4  | `inject_call_failure`       | `device_id`, `function_id`, `failure_rate`        | Calls to that function return `INVALID_ARGUMENT` with probability `failure_rate`.                                                                                                      |
-| 5  | `clear_faults`              | none                                              | Removes every active fault.                                                                                                                                                            |
-| 6  | `inject_device_unreachable` | `device_id`, `duration_ms`                        | `ReadSignals` and `CallFunction` return `UNAVAILABLE`, like a board gone dark on its bus. The device stays listed and `DescribeDevice` still answers.                                  |
+| ID | Function                    | Arguments                                  | Effect                                                                                                                                                                                  |
+| -- | --------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1  | `inject_device_unavailable` | `device_id`, `duration_ms`                 | The device is left out of `ListDevices`; `DescribeDevice` and `ReadSignals` return `NOT_FOUND`; `CallFunction` returns `INVALID_ARGUMENT`.                                              |
+| 2  | `inject_signal_fault`       | `device_id`, `signal_id`, `duration_ms`    | The signal reports `FAULT` quality. Its value is still read live.                                                                                                                       |
+| 3  | `inject_call_latency`       | `device_id`, `latency_ms`                  | Every `CallFunction` on the device is delayed by `latency_ms`. The provider serves one request at a time, so every request queued behind that call, `clear_faults` included, waits too. |
+| 4  | `inject_call_failure`       | `device_id`, `function_id`, `failure_rate` | Calls to that function return `INVALID_ARGUMENT` with probability `failure_rate`.                                                                                                       |
+| 5  | `clear_faults`              | none                                       | Removes every active fault.                                                                                                                                                             |
+| 6  | `inject_device_unreachable` | `device_id`, `duration_ms`                 | `ReadSignals` and `CallFunction` return `UNAVAILABLE`, like a board gone dark on its bus. The device stays listed and `DescribeDevice` still answers.                                   |
 
 Argument rules:
 
