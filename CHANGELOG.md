@@ -13,6 +13,12 @@ commit messages only.
 
 ## [Unreleased]
 
+### Fixed
+
+- `chaos_control` refuses `inject_call_failure` aimed at itself, as it already
+  refuses its other faults. A call failure has no expiry, so one on
+  `clear_faults` left no way to clear faults but a restart.
+
 ## [0.3.0] - 2026-11-11
 
 0.3.0 is a minor release because calls sim used to accept can now be refused,

@@ -439,6 +439,22 @@ def test_invalid_inputs(client: AdppClient, protocol) -> bool:
         assert resp.status.code == invalid_code, f"Expected self-target rejection, got {status_text(resp)}"
         assert "chaos_control cannot target itself" in resp.status.message
 
+    # A call failure has no expiry, so failing chaos_control's clear_faults
+    # (function 5) would leave no way to clear faults but a restart.
+    resp = client.call_function(
+        "chaos_control",
+        4,
+        {
+            "device_id": make_string_value(protocol, "chaos_control"),
+            "function_id": make_string_value(protocol, "5"),
+            "failure_rate": make_double_value(protocol, 1.0),
+        },
+    )
+    assert resp.status.code == invalid_code, f"Expected call-failure self-target rejection, got {status_text(resp)}"
+    assert "chaos_control cannot target itself" in resp.status.message
+    resp = client.call_function("chaos_control", 5, {})
+    assert_ok(resp, "clear_faults after a refused self-target call failure")
+
     # #139: latency blocks the provider's only request thread, so it is capped.
     resp = client.call_function(
         "chaos_control",
