@@ -24,6 +24,11 @@ Upgrade notes: `chaos_control` refuses values it used to accept.
   never took effect. `inject_device_unavailable` and
   `inject_device_unreachable` also refuse `chaos_control` as their target
   (#184).
+### Fixed
+
+- `chaos_control` refuses `inject_call_failure` aimed at itself, as it already
+  refuses its other faults. A call failure has no expiry, so one on
+  `clear_faults` left no way to clear faults but a restart.
 
 ## [0.3.0] - 2026-11-11
 
