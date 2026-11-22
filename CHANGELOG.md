@@ -24,6 +24,7 @@ Upgrade notes: `chaos_control` refuses values it used to accept.
   never took effect. `inject_device_unavailable` and
   `inject_device_unreachable` also refuse `chaos_control` as their target
   (#184).
+
 ### Fixed
 
 - `chaos_control` refuses `inject_call_failure` aimed at itself, as it already
