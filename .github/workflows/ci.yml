@@ -206,7 +206,7 @@ jobs:
           python -m pip install -r requirements-lock.txt
 
       - name: Setup vcpkg
-        uses: anolishq/.github/.github/actions/setup-vcpkg@655d35b035ac85416e33be70d810b7e8b17b15cb # main, pre-v3 (anolishq/.github#176 pilot)
+        uses: anolishq/.github/.github/actions/setup-vcpkg@b11cc3033d90ce17a35fdcffae9bff6388542f6a # v3.1
         with:
           r2-endpoint: ${{ vars.VCPKG_R2_ENDPOINT }}
           r2-bucket: ${{ vars.VCPKG_R2_BUCKET }}
@@ -242,7 +242,7 @@ jobs:
           sudo apt-get install -y ninja-build g++
 
       - name: Setup vcpkg
-        uses: anolishq/.github/.github/actions/setup-vcpkg@655d35b035ac85416e33be70d810b7e8b17b15cb # main, pre-v3 (anolishq/.github#176 pilot)
+        uses: anolishq/.github/.github/actions/setup-vcpkg@b11cc3033d90ce17a35fdcffae9bff6388542f6a # v3.1
         with:
           r2-endpoint: ${{ vars.VCPKG_R2_ENDPOINT }}
           r2-bucket: ${{ vars.VCPKG_R2_BUCKET }}
@@ -317,7 +317,7 @@ jobs:
           python -m pip install -r requirements-lock.txt
 
       - name: Setup vcpkg
-        uses: anolishq/.github/.github/actions/setup-vcpkg@655d35b035ac85416e33be70d810b7e8b17b15cb # main, pre-v3 (anolishq/.github#176 pilot)
+        uses: anolishq/.github/.github/actions/setup-vcpkg@b11cc3033d90ce17a35fdcffae9bff6388542f6a # v3.1
         with:
           r2-endpoint: ${{ vars.VCPKG_R2_ENDPOINT }}
           r2-bucket: ${{ vars.VCPKG_R2_BUCKET }}
@@ -359,7 +359,7 @@ jobs:
           python-version: "3.12"
 
       - name: Setup vcpkg
-        uses: anolishq/.github/.github/actions/setup-vcpkg@655d35b035ac85416e33be70d810b7e8b17b15cb # main, pre-v3 (anolishq/.github#176 pilot)
+        uses: anolishq/.github/.github/actions/setup-vcpkg@b11cc3033d90ce17a35fdcffae9bff6388542f6a # v3.1
         with:
           r2-endpoint: ${{ vars.VCPKG_R2_ENDPOINT }}
           r2-bucket: ${{ vars.VCPKG_R2_BUCKET }}
@@ -460,7 +460,7 @@ jobs:
           python -m pip install -r requirements-lock.txt
 
       - name: Setup vcpkg
-        uses: anolishq/.github/.github/actions/setup-vcpkg@655d35b035ac85416e33be70d810b7e8b17b15cb # main, pre-v3 (anolishq/.github#176 pilot)
+        uses: anolishq/.github/.github/actions/setup-vcpkg@b11cc3033d90ce17a35fdcffae9bff6388542f6a # v3.1
         with:
           r2-endpoint: ${{ vars.VCPKG_R2_ENDPOINT }}
           r2-bucket: ${{ vars.VCPKG_R2_BUCKET }}
@@ -529,7 +529,8 @@ jobs:
     if: needs.changes.outputs.cpp == 'true'
     permissions:
       contents: read
-    uses: anolishq/.github/.github/workflows/clang-tidy-diff.yml@5d26f03ad4502fdf6537e39daf7ea3864afc911f # clang-tidy-diff
+    uses: anolishq/.github/.github/workflows/clang-tidy-diff.yml@b11cc3033d90ce17a35fdcffae9bff6388542f6a # v3.1
+    secrets: inherit
     with:
       configure-preset: ci-linux-release
       blocking: true
