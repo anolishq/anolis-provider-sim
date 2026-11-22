@@ -238,6 +238,11 @@ CallResult call_function(uint32_t function_id, const std::map<std::string, Value
         if (failure_rate < 0.0 || failure_rate > 1.0) {
             return bad("failure_rate must be in [0.0, 1.0]");
         }
+        // A call failure has no expiry: on chaos_control it could fail
+        // clear_faults for good, with no way back but a restart.
+        if (device_id == kSelfDeviceId) {
+            return bad("chaos_control cannot target itself");
+        }
 
         fault_injection::inject_call_failure(device_id, function_id_str, failure_rate);
         return ok();
