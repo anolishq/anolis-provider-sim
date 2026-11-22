@@ -340,12 +340,8 @@ jobs:
     name: Windows Release (FluxGraph ON, strict build)
     # Build-only strict validation, kept off the per-PR path (nightly +
     # on-demand) because a cold Windows+FluxGraph build compiles grpc from source
-    # (~2 h). NOTE: this lane previously rebuilt grpc every run for a different
-    # reason — the vcpkg binary-cache key carried an empty image-version segment
-    # (env.ImageVersion never resolved), so it never rotated on runner-image/ABI
-    # bumps; an ABI-stale cache hit the key exactly, restored 0 packages, and
-    # actions/cache then skipped the post-save (permanent rebuild, NOT 10 GB LRU
-    # eviction as once assumed). Fixed in setup-vcpkg v2.3 (anolishq/.github#96).
+    # (~2 h). The nightly run writes its packages to the R2 binary cache, so a
+    # dispatch after it restores grpc instead of building it.
     # Windows compile stays covered per-PR by the FluxGraph-OFF lane, and
     # Linux+FluxGraph by linux-fluxgraph; the Windows+FluxGraph intersection is
     # validated here nightly. See anolishq/anolis-provider-sim#83.
