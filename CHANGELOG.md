@@ -13,6 +13,18 @@ commit messages only.
 
 ## [Unreleased]
 
+Upgrade notes: `chaos_control` refuses values it used to accept.
+
+- `inject_call_latency` refuses `latency_ms` above 10000 (10 s) with
+  `INVALID_ARGUMENT`. The delay runs on the provider's only request thread,
+  so a larger value held up every request, `clear_faults` included (#183).
+- The timed faults (`inject_device_unavailable`, `inject_device_unreachable`
+  and `inject_signal_fault`) refuse `duration_ms` above 3600000 (1 hour) with
+  `INVALID_ARGUMENT`. A value near the int64 limit overflowed and the fault
+  never took effect. `inject_device_unavailable` and
+  `inject_device_unreachable` also refuse `chaos_control` as their target
+  (#184).
+
 ### Fixed
 
 - `chaos_control` refuses `inject_call_failure` aimed at itself, as it already
